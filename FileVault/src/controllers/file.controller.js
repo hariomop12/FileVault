@@ -2,23 +2,26 @@ const { s3Client } = require("../config/s3");
 const { PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const pool = require("../config/db");
-const crypto = require('crypto');
+const crypto = require("crypto");
+const logger = require("../utils/logger");
 const multer = require("multer");
-
-// Use crypto instead of nanoid
+const { fileUploadCounter } = require("../utils/monitoring");
+// Use crypto instead of CRYPTO
 function generateId(length) {
-  return crypto.randomBytes(Math.ceil(length/2))
-    .toString('hex')
+  return crypto
+    .randomBytes(Math.ceil(length / 2))
+    .toString("hex")
     .slice(0, length);
 }
 
+// Generate Secret Key
 function generateSecretKey() {
-  return crypto.randomBytes(16).toString('hex');
+  return crypto.randomBytes(16).toString("hex");
 }
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-exports.uploadMiddleware = upload.single('file');
+exports.uploadMiddleware = upload.single("file");
 
 exports.uploadFile = async (req, res) => {
   try {
@@ -39,12 +42,13 @@ exports.uploadFile = async (req, res) => {
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
+
     };
 
     // Upload using AWS SDK v3
     const command = new PutObjectCommand(params);
     await s3Client.send(command);
-    
+
     // Generate the file URL
     const fileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${fileName}`;
 
@@ -56,7 +60,7 @@ exports.uploadFile = async (req, res) => {
       `,
       [file.originalname, fileName, secretKey, fileId, fileUrl]
     );
-
+  
     res.status(201).json({
       message: "File uploaded successfully",
       data: {
@@ -78,7 +82,11 @@ exports.downloadFile = async (req, res) => {
   try {
     const { file_id, secret_key } = req.body;
 
+    logger.info(`Download request received for file_id: ${file_id}`);
+
     if (!file_id || !secret_key) {
+      logger.warn("Missing file_id or secret_key in request.");
+
       return res.status(400).json({ error: "Missing file_id or secret_key" });
     }
 
@@ -98,7 +106,7 @@ exports.downloadFile = async (req, res) => {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: fileData.s3_key,
     });
-    
+
     const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
 
     res.status(200).json({
