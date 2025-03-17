@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const fileController = require("../controllers/file.controller");
-const multer = require("multer");
+const { uploadMiddleware } = require("../controllers/file.controller");
 
-const upload = multer({ storage: multer.memoryStorage() });
+// Use the middleware from the controller
+router.post("/upload", uploadMiddleware, fileController.uploadFile);
 
-router.post("/upload", upload.single("file"), fileController.uploadFile);
-router.get("/download/:id", fileController.downloadFile);
+// Change to a POST route to match your controller's expectations
+router.post("/download", fileController.downloadFile);
 
 module.exports = router;

@@ -1,10 +1,12 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const fileRoutes = require("./routes/file.routes");
+const cors = require("cors");
 
 dotenv.config();
 
 const app = express();
+app.use(cors()); // Add this line
 app.use(express.json());
 
 app.use("/api/files", fileRoutes);

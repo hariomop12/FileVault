@@ -17,7 +17,7 @@ console.log(
 console.log("AWS Bucket Name:", process.env.AWS_BUCKET_NAME);
 
 // If region is still undefined, set a default
-const region = process.env.AWS_REGION || "eu-north-1";
+const region = "eu-north-1";
 const bucketName = process.env.AWS_BUCKET_NAME;
 
 const s3Client = new S3Client({
@@ -26,7 +26,6 @@ const s3Client = new S3Client({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
-  
 });
 
 // Function to test S3 connection using a specific bucket
