@@ -1,10 +1,11 @@
 const express = require("express");
-const { uploadFile, uploadMiddleware, downloadFile } = require("../controllers/file.controller");
+const router = express.Router();
+const fileController = require("../controllers/file.controller");
 const multer = require("multer");
 
-const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
-router.post("/upload", uploadMiddleware, uploadFile);
-router.post("/download", downloadFile);
+router.post("/upload", upload.single("file"), fileController.uploadFile);
+router.get("/download/:id", fileController.downloadFile);
 
 module.exports = router;
