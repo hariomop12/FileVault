@@ -1,3 +1,5 @@
+const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 const authMiddleware = (req, res, next) => {
   try {
     // Get token form header

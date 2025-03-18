@@ -15,18 +15,16 @@ app.get("/", (req, res) => {
   res.send("Hello World from FileVault API");
 });
 
-
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/files", fileRoutes);
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
     success: false,
-    message: 'Something went wrong!'
+    message: "Something went wrong!",
   });
 });
 

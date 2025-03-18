@@ -1,4 +1,3 @@
-const { tryCatch } = require("bullmq");
 const AuthService = require("../services/auth.service");
 const logger = require("../utils/logger");
 
@@ -94,7 +93,7 @@ const AuthController = {
   // Vefify email
   verifyEmail: async (req, res) => {
     try {
-      const { token } = req.body;
+      const { token } = req.query;
       if (!token) {
         return res.status(400).json({
           success: false,

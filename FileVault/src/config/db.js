@@ -1,6 +1,5 @@
 const { Pool } = require("pg");
 const pgMonitor = require("pg-monitor");
-const { Console } = require("winston/lib/winston/transports");
  
 const logger = require("../utils/logger");
 const pool = new Pool({

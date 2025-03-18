@@ -42,6 +42,8 @@ const AuthService = {
       );
 
       const user = result.rows[0];
+      // Send verification email
+      await AuthService.sendVerificationEmail(email, name, verificationToken);
 
       return {
         success: "User registered successfully",
@@ -246,7 +248,7 @@ const AuthService = {
           </div>
             `,
       };
-      await transports.sendMail(mailOptions);
+      await transporter.sendMail(mailOptions);
       logger.info(`✔️ Password reset email sent to ${email}`);
       return { success: true, message: "Password reset email sent" };
     } catch (error) {
