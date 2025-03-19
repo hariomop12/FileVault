@@ -109,36 +109,47 @@ const AuthService = {
   // Login user
   loginUser: async (email, password) => {
     try {
+      console.log(`Attempting login for: ${email}`);
+      
       // Check if user exists
-      const result = await query("SELECT * FROM userss WHERE email = $1", [
-        email,
-      ]);
-
+      const result = await query("SELECT * FROM userss WHERE email = $1", [email]);
+  
       if (result.rows.length === 0) {
-        return { error: "Invalid credentials" };
+        console.log(`User not found: ${email}`);
+        return { error: "Invalid credentials", detail: "Email not found" };
       }
-
+  
       const user = result.rows[0];
-
+      console.log(`User found. Email verified: ${user.email_verified}`);
+  
       // Check if email is verified
       if (!user.email_verified) {
-        return { error: "Please verify your email before logging in" };
+        return { 
+          error: "Please verify your email before logging in",
+          detail: "Email verification required" 
+        };
       }
-
+  
       // Check password
       const isMatch = await bcrypt.compare(password, user.password);
-
+      console.log(`Password match: ${isMatch}`);
+  
       if (!isMatch) {
-        return { error: "Invalid credentials" };
+        return { error: "Invalid credentials", detail: "Password incorrect" };
       }
-
+  
       // Generate JWT token
+      const jwtSecret = process.env.JWT_SECRET || "filevault-secret-key";
+      console.log(`Using JWT secret: ${jwtSecret.substring(0, 3)}...`);
+      
       const token = jwt.sign(
         { id: user.id, email: user.email },
-        process.env.JWT_SECRET,
+        jwtSecret,
         { expiresIn: "24h" }
       );
-
+  
+      console.log("Login successful, token generated");
+      
       return {
         success: "User logged in successfully",
         user: {
@@ -149,11 +160,11 @@ const AuthService = {
         token,
       };
     } catch (error) {
+      console.error(`Login error: ${error.message}`);
       logger.error(`❌ Error in AuthService.loginUser: ${error.message}`);
-      throw new Error("Error logging in user", error.message);
+      throw new Error("Error logging in user");
     }
   },
-
   // Verify email
   verifyEmail: async (token) => {
     try {

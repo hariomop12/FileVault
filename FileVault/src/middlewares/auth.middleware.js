@@ -1,8 +1,9 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
+
 const authMiddleware = (req, res, next) => {
   try {
-    // Get token form header
+    // Get token from header
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -21,6 +22,7 @@ const authMiddleware = (req, res, next) => {
         message: "Access denied. No token provided.",
       });
     }
+    
     try {
       // Verify token
       const decoded = jwt.verify(
@@ -30,7 +32,7 @@ const authMiddleware = (req, res, next) => {
 
       // Add user to request
       req.user = decoded;
-      next(); // This was missing
+      next();
     } catch (error) {
       logger.error(`Token verification failed: ${error.message}`);
       return res.status(401).json({
@@ -45,3 +47,5 @@ const authMiddleware = (req, res, next) => {
       .json({ success: false, message: "Server error during authentication" });
   }
 };
+
+module.exports = authMiddleware;

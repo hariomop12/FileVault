@@ -2,14 +2,16 @@ const express = require("express");
 const dotenv = require("dotenv");
 const fileRoutes = require("./routes/file.routes");
 const authRoutes = require("./routes/auth.routes");
+const userFileRoutes = require("./routes/userFile.routes");
 const cors = require("cors");
 const helmet = require("helmet");
 
 dotenv.config();
 
 const app = express();
-app.use(cors()); // Add this line
+
 app.use(express.json());
+app.use(helmet());  
 
 app.get("/", (req, res) => {
   res.send("Hello World from FileVault API");
@@ -17,7 +19,8 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/files", fileRoutes);
+app.use("/api/files", fileRoutes);  // Anonymous routes
+app.use("/api", userFileRoutes);    // Authenticated routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {
