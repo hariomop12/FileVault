@@ -3,7 +3,7 @@ const path = require("path");
 const dotenv = require("dotenv");
 
 // Load environment variables from the root .env file with explicit path
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 console.log("AWS Region:", process.env.AWS_REGION);
 console.log(
