@@ -16,7 +16,7 @@ const FileService = {
     try {
       const result = await query(
         `SELECT id, filename, file_type, file_size, is_public, created_at 
-         FROM filess 
+         FROM filess
          WHERE user_id = $1
          ORDER BY created_at DESC`,
         [userId]

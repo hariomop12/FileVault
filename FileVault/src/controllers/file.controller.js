@@ -155,7 +155,7 @@ const UserFileController = {
     try {
       const userId = req.user.id;
       const result = await FileService.getUserFiles(userId);
-      
+      console.log(result.files); 
       res.status(200).json({
         success: true,
         data: result.files,
