@@ -151,22 +151,28 @@ const UserFileController = {
   },
 
   // Get all user files
-  getUserFiles: async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const result = await FileService.getUserFiles(userId);
-      console.log(result.files); 
-      res.status(200).json({
-        success: true,
-        data: result.files,
-      });
-    } catch (error) {
-      logger.error(`❌ Get files controller error: ${error.message}`);
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to retrieve files" });
-    }
-  },
+// In file.service.js
+getUserFiles: async (userId) => {
+  try {
+    console.log(`Getting files for user ID: ${userId}`);
+
+    const result = await query(
+      `SELECT id, filename, file_type, file_size, is_public, created_at 
+       FROM filess
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    console.log('Query result:', result)
+    console.log(`Number of files found: ${result.rows.length}`);
+
+    return { files: result.rows };
+  } catch (error) {
+    logger.error(`❌ Error getting user files: ${error.message}`);
+    throw new Error("Failed to retrieve user files");
+  }
+},
 
   // Get file metadata
   getFileMetadata: async (req, res) => {
