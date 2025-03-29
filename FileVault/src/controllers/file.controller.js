@@ -1,7 +1,7 @@
 const { s3Client } = require("../config/s3");
 const { PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { pool } = require("../config/db");
+const { pool, query } = require("../config/db");
 const crypto = require("crypto");
 const multer = require("multer");
 const FileService = require("../services/file.service");
@@ -125,7 +125,7 @@ const UserFileController = {
   uploadMiddleware: upload.single("file"),
 
   // Upload file to S3
-  uploadFile: async (req, res) => {
+  uploadFilee: async (req, res) => {
     try {
       const file = req.file;
       if (!file) {
@@ -150,30 +150,26 @@ const UserFileController = {
     }
   },
 
-  // Get all user files
-// In file.service.js
-getUserFiles: async (userId) => {
-  try {
-    console.log(`Getting files for user ID: ${userId}`);
+  getUserFiles: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      console.log(`Getting files for user ID: ${userId}`);
 
-    const result = await query(
-      `SELECT id, filename, file_type, file_size, is_public, created_at 
-       FROM filess
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [userId]
-    );
+      const result = await FileService.getUserFiles(userId);
 
-    console.log('Query result:', result)
-    console.log(`Number of files found: ${result.rows.length}`);
-
-    return { files: result.rows };
-  } catch (error) {
-    logger.error(`❌ Error getting user files: ${error.message}`);
-    throw new Error("Failed to retrieve user files");
-  }
-},
-
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error(`❌ Error getting user files: ${error.message}`);
+      console.error(`Error in getUserFiles: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve user files",
+      });
+    }
+  },
   // Get file metadata
   getFileMetadata: async (req, res) => {
     try {
@@ -206,19 +202,19 @@ getUserFiles: async (userId) => {
     try {
       const fileId = req.params.id;
       const userId = req.user.id;
-      
+
       const result = await FileService.getDownloadLink(fileId, userId);
-      
+
       if (result.error) {
-        return res.status(404).json({ 
-          success: false, 
-          message: result.error 
+        return res.status(404).json({
+          success: false,
+          message: result.error,
         });
       }
-      
+
       res.status(200).json({
         success: true,
-        data: result
+        data: result,
       });
     } catch (error) {
       logger.error(`❌ Download link controller error: ${error.message}`);
@@ -233,7 +229,7 @@ getUserFiles: async (userId) => {
     try {
       const fileId = req.params.id;
       const userId = req.user.id;
-      
+
       const result = await FileService.deleteFile(fileId, userId);
 
       if (result.error) {
@@ -254,7 +250,7 @@ getUserFiles: async (userId) => {
         .json({ success: false, message: "Failed to delete file" });
     }
   },
-  
+
   // Create shareable link
   createShareableLink: async (req, res) => {
     try {
@@ -288,5 +284,5 @@ module.exports = {
   ...UserFileController,
   uploadFile: exports.uploadFile,
   uploadMiddleware: exports.uploadMiddleware,
-  downloadFile: exports.downloadFile
+  downloadFile: exports.downloadFile,
 };

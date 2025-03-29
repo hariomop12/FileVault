@@ -11,8 +11,8 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.EMAIL_PORT || "587"),
   secure: process.env.EMAIL_SECURE === "true",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: "hariomvirkhare02@gmail.com",
+    pass: "wrse vxzk dvko wopq",
   },
 });
 
@@ -21,9 +21,10 @@ const AuthService = {
   registerUser: async (name, email, password) => {
     try {
       // Check if user already exists
-      const userCheck = await query("SELECT * FROM userss WHERE email = $1", [
-        email,
-      ]);
+      const userCheck = await query(
+        "SELECT * FROM filevault_users WHERE email = $1",
+        [email]
+      );
       if (userCheck.rows.length > 0) {
         return { error: "User already exists" };
       }
@@ -37,7 +38,7 @@ const AuthService = {
 
       // Insert user into database
       const result = await query(
-        "INSERT INTO userss (name, email, password, verification_token) VALUES ($1, $2, $3, $4) RETURNING *",
+        "INSERT INTO filevault_users (name, email, password, verification_token) VALUES ($1, $2, $3, $4) RETURNING *",
         [name, email, hashedPassword, verificationToken]
       );
 
@@ -63,7 +64,8 @@ const AuthService = {
   // Send verification email
   sendVerificationEmail: async (email, name, token) => {
     try {
-      const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const baseUrl =
+        process.env.FRONTEND_URL || "http://localhost:3000/api/auth";
       const verificationLink = `${baseUrl}/verify-email?token=${token}`;
 
       const mailOptions = {
@@ -110,46 +112,47 @@ const AuthService = {
   loginUser: async (email, password) => {
     try {
       console.log(`Attempting login for: ${email}`);
-      
+
       // Check if user exists
-      const result = await query("SELECT * FROM userss WHERE email = $1", [email]);
-  
+      const result = await query(
+        "SELECT * FROM filevault_users WHERE email = $1",
+        [email]
+      );
+
       if (result.rows.length === 0) {
         console.log(`User not found: ${email}`);
         return { error: "Invalid credentials", detail: "Email not found" };
       }
-  
+
       const user = result.rows[0];
       console.log(`User found. Email verified: ${user.email_verified}`);
-  
+
       // Check if email is verified
       if (!user.email_verified) {
-        return { 
+        return {
           error: "Please verify your email before logging in",
-          detail: "Email verification required" 
+          detail: "Email verification required",
         };
       }
-  
+
       // Check password
       const isMatch = await bcrypt.compare(password, user.password);
       console.log(`Password match: ${isMatch}`);
-  
+
       if (!isMatch) {
         return { error: "Invalid credentials", detail: "Password incorrect" };
       }
-  
+
       // Generate JWT token
       const jwtSecret = process.env.JWT_SECRET || "filevault-secret-key";
       console.log(`Using JWT secret: ${jwtSecret.substring(0, 3)}...`);
-      
-      const token = jwt.sign(
-        { id: user.id, email: user.email },
-        jwtSecret,
-        { expiresIn: "24h" }
-      );
-  
+
+      const token = jwt.sign({ id: user.id, email: user.email }, jwtSecret, {
+        expiresIn: "24h",
+      });
+
       console.log("Login successful, token generated");
-      
+
       return {
         success: "User logged in successfully",
         user: {
@@ -170,7 +173,7 @@ const AuthService = {
     try {
       // Find user with this verification token
       const result = await query(
-        "SELECT * FROM userss WHERE verification_token = $1",
+        "SELECT * FROM filevault_users WHERE verification_token = $1",
         [token]
       );
 
@@ -180,7 +183,7 @@ const AuthService = {
 
       // Update user to verified and clear token
       await query(
-        "UPDATE userss SET email_verified = true, verification_token = null WHERE verification_token = $1",
+        "UPDATE filevault_users SET email_verified = true, verification_token = null WHERE verification_token = $1",
         [token]
       );
 
@@ -195,9 +198,10 @@ const AuthService = {
   forgotPassword: async (email) => {
     try {
       // Check if user exists
-      const result = await query("SELECT * FROM userss WHERE email = $1", [
-        email,
-      ]);
+      const result = await query(
+        "SELECT * FROM filevault_users WHERE email = $1",
+        [email]
+      );
 
       if (result.rows.length === 0) {
         return { error: "No user found with this email" };
@@ -210,7 +214,7 @@ const AuthService = {
 
       // Save reset token to database
       await query(
-        "UPDATE userss SET verification_token = $1 WHERE email = $2",
+        "UPDATE filevault_users SET verification_token = $1 WHERE email = $2",
         [resetToken, email]
       );
 
@@ -275,7 +279,7 @@ const AuthService = {
     try {
       // check token is exists
       const result = await query(
-        "SELECT * FROM userss WHERE verification_token = $1",
+        "SELECT * FROM filevault_users WHERE verification_token = $1",
         [token]
       );
 
@@ -289,7 +293,7 @@ const AuthService = {
 
       // Update password and clear token
       await query(
-        "UPDATE userss SET password = $1, verification_token = null WHERE verification_token = $2",
+        "UPDATE filevault_users SET password = $1, verification_token = null WHERE verification_token = $2",
         [hashedPassword, token]
       );
 
@@ -305,7 +309,7 @@ const AuthService = {
     try {
       // Check if user exists and is not verified
       const result = await query(
-        "SELECT * FROM userss WHERE email = $1 AND email_verified = false",
+        "SELECT * FROM filevault_users WHERE email = $1 AND email_verified = false",
         [email]
       );
       if (result.rows.length === 0) {
@@ -321,7 +325,7 @@ const AuthService = {
 
       await query(
         `
-            UPDATE userss
+            UPDATE filevault_users
             SET verification_token = $1
             WHERE email = $2
         `,

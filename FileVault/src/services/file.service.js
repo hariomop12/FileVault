@@ -18,7 +18,7 @@ const FileService = {
 
       const result = await query(
         `SELECT id, filename, file_type, file_size, is_public, s3_key, created_at 
-         FROM filess
+         FROM filevault_files_authed
          WHERE user_id = $1
          ORDER BY created_at DESC`,
         [userId]
@@ -86,7 +86,7 @@ const FileService = {
       const result = await query(
         `SELECT id, filename, file_type, file_size, is_public, 
                 s3_key, created_at, access_token
-         FROM filess 
+         FROM filevault_files_authed 
          WHERE id = $1 AND user_id = $2`,
         [fileId, userId]
       );
@@ -108,7 +108,7 @@ const FileService = {
       // Verify file belongs to user or is public
       const result = await query(
         `SELECT id, filename, s3_key, is_public, user_id 
-         FROM filess 
+         FROM filevault_files_authed 
          WHERE id = $1 AND (user_id = $2 OR is_public = true)`,
         [fileId, userId]
       );
@@ -146,7 +146,7 @@ const FileService = {
     try {
       // First retrieve the file to get S3 key
       const fileResult = await query(
-        `SELECT s3_key FROM filess WHERE id = $1 AND user_id = $2`,
+        `SELECT s3_key FROM filevault_files_authed WHERE id = $1 AND user_id = $2`,
         [fileId, userId]
       );
 
@@ -170,10 +170,10 @@ const FileService = {
       }
 
       // Delete from database
-      await query(`DELETE FROM filess WHERE id = $1 AND user_id = $2`, [
-        fileId,
-        userId,
-      ]);
+      await query(
+        `DELETE FROM filevault_files_authed WHERE id = $1 AND user_id = $2`,
+        [fileId, userId]
+      );
 
       return { success: "File deleted successfully" };
     } catch (error) {
@@ -187,7 +187,7 @@ const FileService = {
     try {
       // Check if file exists and belongs to user
       const fileResult = await query(
-        `SELECT id FROM filess WHERE id = $1 AND user_id = $2`,
+        `SELECT id FROM filevault_files_authed WHERE id = $1 AND user_id = $2`,
         [fileId, userId]
       );
 
@@ -200,7 +200,7 @@ const FileService = {
 
       // Update file with access token and set to public
       await query(
-        `UPDATE filess SET access_token = $1, is_public = true WHERE id = $2`,
+        `UPDATE filevault_files_authed SET access_token = $1, is_public = true WHERE id = $2`,
         [accessToken, fileId]
       );
 
@@ -237,7 +237,7 @@ const FileService = {
 
       // Save to database
       const result = await query(
-        `INSERT INTO filess (user_id, filename, s3_key, file_size, file_type, secret_key)
+        `INSERT INTO filevault_files_authed (user_id, filename, s3_key, file_size, file_type, secret_key)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
         [userId, file.originalname, s3Key, file.size, file.mimetype, secretKey]

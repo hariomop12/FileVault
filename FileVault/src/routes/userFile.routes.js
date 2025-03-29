@@ -7,7 +7,7 @@ const authMiddleware = require("../middlewares/auth.middleware");
 router.use(authMiddleware);
 
 // File management routes for authenticated users
-router.post('/upload', UserFileController.uploadMiddleware, UserFileController.uploadFile);
+router.post('/upload', UserFileController.uploadMiddleware, UserFileController.uploadFilee);
 router.get('/files', UserFileController.getUserFiles);
 router.get('/files/:id', UserFileController.getFileMetadata);
 router.get('/download/:id', UserFileController.getDownloadLink);
