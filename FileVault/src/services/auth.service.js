@@ -144,14 +144,12 @@ const AuthService = {
       }
 
       // Generate JWT token
-      const jwtSecret = process.env.JWT_SECRET || "filevault-secret-key";
-      console.log(`Using JWT secret: ${jwtSecret.substring(0, 3)}...`);
-
+      const jwtSecret = process.env.JWT_SECRET || "AVNS_kYc_wSP26wAlt5gT4FS";
+     
       const token = jwt.sign({ id: user.id, email: user.email }, jwtSecret, {
         expiresIn: "24h",
+        algorithm : "HS256",
       });
-
-      console.log("Login successful, token generated");
 
       return {
         success: "User logged in successfully",

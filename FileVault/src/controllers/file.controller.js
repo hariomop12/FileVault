@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const multer = require("multer");
 const FileService = require("../services/file.service");
 const logger = require("../utils/logger");
+const { FILE_SIZE_LIMIT } = require('../middlewares/validation.middleware');
 
 // Use crypto instead of nanoid
 function generateId(length) {
@@ -19,7 +20,9 @@ function generateSecretKey() {
   return crypto.randomBytes(16).toString("hex");
 }
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits : {
+  fileSize: FILE_SIZE_LIMIT // 5 GB
+}});
 
 exports.uploadMiddleware = upload.single("file");
 

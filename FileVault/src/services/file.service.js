@@ -107,28 +107,28 @@ const FileService = {
     try {
       // Verify file belongs to user or is public
       const result = await query(
-        `SELECT id, filename, s3_key, is_public, user_id 
+        `SELECT id, filename, s3_key, user_id 
          FROM filevault_files_authed 
          WHERE id = $1 AND (user_id = $2 OR is_public = true)`,
         [fileId, userId]
       );
-
+  
       if (result.rows.length === 0) {
         return { error: "File not found or you don't have permission" };
       }
-
+  
       const fileData = result.rows[0];
-
+  
       // Generate signed URL
       const command = new GetObjectCommand({
         Bucket: process.env.AWS_BUCKET_NAME,
-        Key: fileData.s3_key,
+        Key: fileData.s3_key 
       });
-
+  
       const signedUrl = await getSignedUrl(s3Client, command, {
         expiresIn: 3600,
       });
-
+  
       return {
         file_id: fileData.id,
         file_name: fileData.filename,
