@@ -2,23 +2,23 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y build-essential python3
 
-# Copy package.json first
-COPY package.json ./
-
-# IMPORTANT: Modify package.json to remove postinstall before npm install
-RUN grep -v "postinstall" package.json > temp.json && mv temp.json package.json
+# Copy package files first
+COPY package*.json ./
 
 # Install dependencies
 RUN npm install --omit=dev
 
-# Now copy the rest of the app
+# Copy source code
 COPY . .
 
-# Install dbmate globally
-RUN npm install -g dbmate
+# Print environment variables for debugging (exclude secrets)
+RUN echo "NODE_ENV: $NODE_ENV"
+RUN echo "PORT: $PORT"
+RUN echo "AWS_REGION is set: $(if [ -n "$AWS_REGION" ]; then echo 'yes'; else echo 'no'; fi)"
+RUN echo "AWS_BUCKET_NAME is set: $(if [ -n "$AWS_BUCKET_NAME" ]; then echo 'yes'; else echo 'no'; fi)"
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -27,5 +27,5 @@ ENV PORT=3000
 # Expose the port
 EXPOSE 3000
 
-# Start the app (which will run migrations on startup)
+# Start the app
 CMD ["node", "src/server.js"]
