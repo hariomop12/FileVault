@@ -2,20 +2,23 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Install build dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y build-essential python3
 
-# Copy package files
-COPY package*.json ./
+# Copy package.json first
+COPY package.json ./
+
+# IMPORTANT: Modify package.json to remove postinstall before npm install
+RUN grep -v "postinstall" package.json > temp.json && mv temp.json package.json
 
 # Install dependencies
 RUN npm install --omit=dev
 
+# Now copy the rest of the app
+COPY . .
+
 # Install dbmate globally
 RUN npm install -g dbmate
-
-# Copy source code
-COPY . .
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -24,5 +27,5 @@ ENV PORT=3000
 # Expose the port
 EXPOSE 3000
 
-# Start the app
+# Start the app (which will run migrations on startup)
 CMD ["node", "src/server.js"]

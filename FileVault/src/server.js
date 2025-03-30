@@ -1,12 +1,9 @@
+ 
 const { exec } = require('child_process');
-const app = require('./app');
-
-const PORT = process.env.PORT || 3000;
-
-// Run migrations before starting the server in production
-if (process.env.NODE_ENV === 'production') {
+ 
+if (process.env.DATABASE_URL) {
   console.log('Running database migrations...');
-  exec('npx dbmate up', (error, stdout, stderr) => {
+  exec('dbmate up', (error, stdout, stderr) => {
     if (error) {
       console.error(`Migration error: ${error.message}`);
       // Continue starting the server even if migrations fail
@@ -14,13 +11,16 @@ if (process.env.NODE_ENV === 'production') {
     if (stdout) console.log(`Migration output: ${stdout}`);
     if (stderr) console.error(`Migration stderr: ${stderr}`);
     
-    console.log('Starting server after migration attempt');
     startServer();
   });
 } else {
+  console.log('No DATABASE_URL found, skipping migrations');
   startServer();
 }
 
 function startServer() {
-  app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 }

@@ -17,14 +17,10 @@ jobs:
         with:
           node-version: '16.x'
           
-      - name: Install dependencies
-        # Change this line from npm ci to npm install
-        run: npm install
-        
       - name: Install Railway CLI
         run: npm install -g @railway/cli
         
       - name: Deploy to Railway
-        run: railway up
+        run: railway up --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
