@@ -11,8 +11,8 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.EMAIL_PORT || "587"),
   secure: process.env.EMAIL_SECURE === "true",
   auth: {
-    user: "hariomvirkhare02@gmail.com",
-    pass: "wrse vxzk dvko wopq",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
@@ -65,7 +65,7 @@ const AuthService = {
   sendVerificationEmail: async (email, name, token) => {
     try {
       const baseUrl =
-        process.env.FRONTEND_URL || "http://localhost:3000/api/auth";
+        process.env.FRONTEND_URL || "http://localhost:5000/api/v1/auth";
       const verificationLink = `${baseUrl}/verify-email?token=${token}`;
 
       const mailOptions = {
@@ -144,7 +144,7 @@ const AuthService = {
       }
 
       // Generate JWT token
-      const jwtSecret = process.env.JWT_SECRET || "AVNS_kYc_wSP26wAlt5gT4FS";
+      const jwtSecret = process.env.JWT_SECRET;
      
       const token = jwt.sign({ id: user.id, email: user.email }, jwtSecret, {
         expiresIn: "24h",

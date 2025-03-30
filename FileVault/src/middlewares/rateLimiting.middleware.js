@@ -20,7 +20,7 @@ const apiLimiter = rateLimit({
   max: 100, // max 100 requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  handler: limitExceededHandler,
+  handler: rateLimitExceededHandler,
   skip: (req) => req.ip === "127.0.0.1",
   keyGenerator: (req) => req.ip || req.headers["x-forwarded-for"] || "unknown",
 });
@@ -31,7 +31,7 @@ const authLimiter = rateLimit({
   max: 10, // max 10 auth attempts per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  handler: limitExceededHandler,
+  handler: rateLimitExceededHandler,
   skipSuccessfulRequests: false, // Don't skip even if request succeeds
   keyGenerator: (req) => req.ip || req.headers["x-forwarded-for"] || "unknown",
 });
@@ -42,7 +42,7 @@ const uploadLimiter = rateLimit({
   max: 5, // max 5 uploads per minute
   standardHeaders: true,
   legacyHeaders: false,
-  handler: limitExceededHandler,
+  handler: rateLimitExceededHandler,
   keyGenerator: (req) => {
     // If authenticated, use user ID + IP, otherwise just IP
     return req.user
@@ -58,7 +58,7 @@ const createEndpointLimiter = (maxRequests, timeWindowMinutes) => {
     max: maxRequests,
     standardHeaders: true,
     legacyHeaders: false,
-    handler: limitExceededHandler,
+    handler: rateLimitExceededHandler,
     keyGenerator: (req) => {
       return req.user
         ? `${req.user.id}-${req.ip}`

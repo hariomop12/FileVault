@@ -6,7 +6,7 @@ const crypto = require("crypto");
 const multer = require("multer");
 const FileService = require("../services/file.service");
 const logger = require("../utils/logger");
-const { FILE_SIZE_LIMIT } = require('../middlewares/validation.middleware');
+const { FILE_SIZE_LIMIT } = require("../middlewares/validation.middleware");
 
 // Use crypto instead of nanoid
 function generateId(length) {
@@ -20,12 +20,41 @@ function generateSecretKey() {
   return crypto.randomBytes(16).toString("hex");
 }
 
-const upload = multer({ storage: multer.memoryStorage(), limits : {
-  fileSize: FILE_SIZE_LIMIT // 5 GB
-}});
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: FILE_SIZE_LIMIT, // 5 GB
+  },
+});
 
 exports.uploadMiddleware = upload.single("file");
 
+const handleControllerError = (error, operation, res) => {
+  const errorId = crypto.randomBytes(4).toString("hex");
+  logger.error(`❌ Error ${operation} [${errorId}]: ${error.message}`, {
+    errorId,
+    stack: error.stack,
+    operation,
+  });
+
+  // Always return the response
+  return res.status(500).json({
+    success: false,
+    message: `Failed to ${operation}`,
+    errorId, // Include to help trace errors in logs
+  });
+};
+
+const sendResponse = (res, statusCode, success, message, data = null) => {
+  const response = {
+    success,
+    message,
+    ...(data && { data }),
+  };
+  return res.status(statusCode).json(response);
+};
+
+// Anonymous File Upload
 exports.uploadFile = async (req, res) => {
   try {
     const file = req.file;
@@ -62,24 +91,19 @@ exports.uploadFile = async (req, res) => {
       `,
       [file.originalname, fileName, secretKey, fileId, fileUrl]
     );
-
-    res.status(201).json({
-      message: "File uploaded successfully",
-      data: {
-        file_id: fileId,
-        file_name: file.originalname,
-        file_size: file.size,
-        mime_type: file.mimetype,
-        url: fileUrl,
-        secret_key: secretKey,
-      },
-    });
+    const result = {
+      file_id: fileId,
+      secret_key: secretKey,
+      file_name: file.originalname,
+      url: fileUrl
+    };
+    sendResponse(res, 201, true, "File uploaded successfully", result);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Upload failed", message: error.message });
+    return handleControllerError(error, "upload file", res);
   }
 };
 
+// Anonymous File Download
 exports.downloadFile = async (req, res) => {
   try {
     const { file_id, secret_key } = req.body;
@@ -146,10 +170,7 @@ const UserFileController = {
         data: result,
       });
     } catch (error) {
-      logger.error(`❌ Upload controller error: ${error.message}`);
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to upload file" });
+      return handleControllerError(error, "upload file", res);
     }
   },
 
@@ -275,7 +296,7 @@ const UserFileController = {
       });
     } catch (error) {
       logger.error(`❌ Share file controller error: ${error.message}`);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Failed to create shareable link",
       });
