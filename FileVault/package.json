@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "dbmate up",
-    "postinstall": "npm run migrate"
+    "postinstall": "echo 'Migrations will run on startup'",
+    "db:migrate": "dbmate up"
   },
   "jest": {
     "testEnvironment": "node",

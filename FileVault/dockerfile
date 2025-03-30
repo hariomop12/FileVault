@@ -1,7 +1,28 @@
-FROM node:18-alpine
+FROM node:18-slim
+
 WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y build-essential python3
+
+# Copy package files
 COPY package*.json ./
-RUN npm install
+
+# Install dependencies
+RUN npm install --omit=dev
+
+# Install dbmate globally
+RUN npm install -g dbmate
+
+# Copy source code
 COPY . .
-EXPOSE 3001
-CMD ["npm", "start"]
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Expose the port
+EXPOSE 3000
+
+# Start the app
+CMD ["node", "src/server.js"]
