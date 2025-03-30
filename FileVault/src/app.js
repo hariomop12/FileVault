@@ -7,7 +7,8 @@ const userFileRoutes = require("./routes/userFile.routes");
 const cors = require("cors");
 const helmet = require("helmet");
 const { apiLimiter, authLimiter } = require("./middlewares/rateLimiting.middleware");
-
+const compression = require('compression');
+app.use(compression());
 dotenv.config();
 
  
@@ -27,6 +28,10 @@ app.use("/api/v1/auth", authLimiter, authRoutes);
 app.use("/api/v1/files", fileRoutes);
 app.use("/api/v1", userFileRoutes);
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'UP' });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -35,5 +40,16 @@ app.use((err, req, res, next) => {
     message: "Something went wrong!"
   });
 });
+
+// Force HTTPS in production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      res.redirect(`https://${req.header('host')}${req.url}`);
+    } else {
+      next();
+    }
+  });
+}
 
 module.exports = app;

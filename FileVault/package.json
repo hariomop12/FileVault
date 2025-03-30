@@ -6,13 +6,11 @@
     "test": "tests"
   },
   "scripts": {
-  "start": "node src/server.js",
-  "dev": "nodemon server.js",
-  "test": "jest",
-  "test:watch": "jest --watch",
-  "test:coverage": "jest --coverage",
-  "test:windows": "set NODE_ENV=test&& jest"
-},
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate": "dbmate up",
+    "postinstall": "npm run migrate"
+  },
   "jest": {
     "testEnvironment": "node",
     "coveragePathIgnorePatterns": [
@@ -34,6 +32,7 @@
     "bcryptjs": "^3.0.2",
     "bullmq": "^5.43.1",
     "clamav.js": "^0.12.0",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dbmate": "^2.26.0",
