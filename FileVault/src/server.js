@@ -1,6 +1,9 @@
- 
 const { exec } = require('child_process');
- 
+const app = require('./app'); // Add this line to import your app!
+
+// Logger if you have one
+const logger = require('./utils/logger');
+
 if (process.env.DATABASE_URL) {
   console.log('Running database migrations...');
   exec('dbmate up', (error, stdout, stderr) => {
