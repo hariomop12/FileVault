@@ -6,7 +6,7 @@ const pgMonitor = require("pg-monitor");
 const sslCertPath = path.join(__dirname,"ca.pem");
 const sslCert = fs.readFileSync(sslCertPath, "utf8");
 const dotenv = require("dotenv");
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const logger = require("../utils/logger");
 const pool = new Pool({
@@ -15,12 +15,12 @@ const pool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   database: process.env.DB_DATABASE,
-  connectionTimeoutMillis: 10000, // 30 seconds
-  idleTimeoutMillis: 20000, // 30 seconds
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 20000,
   ssl: {
-    rejectUnauthorized: true,
     ca: sslCert,
-  },
+    rejectUnauthorized: true
+  }
 });
 
 // 📊 Monitor Database Queries (for Development)

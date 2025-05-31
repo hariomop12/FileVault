@@ -3,7 +3,7 @@ const path = require("path");
 const dotenv = require("dotenv");
 
 // Load environment variables
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 // Validate Required AWS Variables
 if (!process.env.AWS_REGION || !process.env.AWS_BUCKET_NAME || !process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
