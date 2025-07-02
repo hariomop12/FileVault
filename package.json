@@ -1,13 +1,13 @@
 {
   "name": "filevault",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "FileVault/src/server.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node FileVault/src/server.js",
+    "dev": "nodemon FileVault/src/server.js",
     "build": "npm install",
     "migrate": "dbmate up",
     "postinstall": "echo 'Migrations will run on startup'",

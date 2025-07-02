@@ -5,14 +5,14 @@ WORKDIR /app
 # Install build dependencies
 RUN apt-get update && apt-get install -y build-essential python3
 
-# Copy package files first (from parent directory)
-COPY ../package*.json ./
+# Copy package files first
+COPY package*.json ./
 
 # Install dependencies
 RUN npm install --omit=dev
 
-# Copy the entire FileVault directory structure
-COPY . ./FileVault/
+# Copy source code
+COPY FileVault/ ./FileVault/
 
 # Print environment variables for debugging (exclude secrets)
 RUN echo "NODE_ENV: $NODE_ENV"
