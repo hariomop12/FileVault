@@ -1,0 +1,534 @@
+{
+  "info": {
+    "name": "FileVault API Collection",
+    "description": "Complete API collection for FileVault - Secure Cloud File Storage API\n\n## About FileVault\nFileVault is an enterprise-grade secure file storage solution with:\n- 🔒 JWT-based authentication with email verification\n- 📁 Secure file upload/download with AWS S3\n- 🛡️ Rate limiting and security middleware\n- 📊 Comprehensive logging and monitoring\n- 🔗 Shareable links with expiration controls\n\n## How to Use\n1. **Sign up** for a new account\n2. **Verify email** using the verification token\n3. **Login** to get your JWT token\n4. **Set the token** in the Authorization tab or use {{auth_token}} variable\n5. **Upload files** and manage your storage\n\n## Environment Variables\nSet these variables in Postman:\n- `base_url`: http://localhost:3000\n- `auth_token`: Your JWT token (set automatically after login)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "🏠 Health & Status",
+      "item": [
+        {
+          "name": "API Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Check if the FileVault API is running"
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Comprehensive health check with uptime and status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Register User (Signup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.token) {",
+                  "        pm.environment.set('auth_token', response.token);",
+                  "        console.log('Auth token saved:', response.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"securePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/signup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "signup"]
+            },
+            "description": "Register a new user account. Email verification required before login."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.token) {",
+                  "        pm.environment.set('auth_token', response.token);",
+                  "        console.log('Auth token saved:', response.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"securePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Login with email and password. Returns JWT token for authenticated requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"your-verification-token-here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/verify-email",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "verify-email"]
+            },
+            "description": "Verify email address using token sent to email"
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "forgot-password"]
+            },
+            "description": "Request password reset email"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"your-reset-token-here\",\n  \"password\": \"newSecurePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "reset-password"]
+            },
+            "description": "Reset password using reset token"
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Verification Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/resend-verification",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "resend-verification"]
+            },
+            "description": "Resend email verification link"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📁 Anonymous File Operations",
+      "item": [
+        {
+          "name": "Upload File (Anonymous)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.file && response.file.file_id) {",
+                  "        pm.environment.set('anonymous_file_id', response.file.file_id);",
+                  "        pm.environment.set('anonymous_secret_key', response.file.secret_key);",
+                  "        console.log('File uploaded successfully:', response.file.file_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select a file to upload (max 5GB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "upload"]
+            },
+            "description": "Upload a file without authentication. Returns file_id and secret_key for download."
+          },
+          "response": []
+        },
+        {
+          "name": "Download File (Anonymous)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"file_id\": \"{{anonymous_file_id}}\",\n  \"secret_key\": \"{{anonymous_secret_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "download"]
+            },
+            "description": "Download an anonymously uploaded file using file_id and secret_key"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔒 Authenticated File Operations",
+      "item": [
+        {
+          "name": "Upload File (Authenticated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.file && response.file.id) {",
+                  "        pm.environment.set('user_file_id', response.file.id);",
+                  "        console.log('File uploaded successfully:', response.file.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select a file to upload"
+                },
+                {
+                  "key": "is_public",
+                  "value": "false",
+                  "type": "text",
+                  "description": "Make file publicly accessible (optional)"
+                },
+                {
+                  "key": "folder_path",
+                  "value": "/",
+                  "type": "text",
+                  "description": "Folder path for organization (optional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "upload"]
+            },
+            "description": "Upload a file to authenticated user's account with organization options"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All User Files",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Files per page"
+                },
+                {
+                  "key": "folder_path",
+                  "value": "/",
+                  "description": "Filter by folder",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "document",
+                  "description": "Search by filename",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve all files belonging to the authenticated user with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get File Metadata",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/{{user_file_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "{{user_file_id}}"]
+            },
+            "description": "Get detailed metadata for a specific file"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Download Link",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/download/{{user_file_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "download", "{{user_file_id}}"]
+            },
+            "description": "Generate a secure download link for the file"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Shareable Link",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expiry_hours\": 24,\n  \"password\": \"optional-password\",\n  \"download_limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/{{user_file_id}}/share",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "{{user_file_id}}", "share"]
+            },
+            "description": "Create a shareable link with optional password protection and expiration"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete File",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/{{user_file_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "{{user_file_id}}"]
+            },
+            "description": "Permanently delete a file from storage and database"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set base URL if not already set",
+          "if (!pm.environment.get('base_url')) {",
+          "    pm.environment.set('base_url', 'http://localhost:3000');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

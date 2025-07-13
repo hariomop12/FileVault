@@ -1,0 +1,37 @@
+{
+  "id": "filevault-environment",
+  "name": "FileVault Development",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "description": "Base URL for the FileVault API",
+      "enabled": true
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "description": "JWT authentication token (auto-populated after login)",
+      "enabled": true
+    },
+    {
+      "key": "user_file_id",
+      "value": "",
+      "description": "File ID for authenticated user files (auto-populated)",
+      "enabled": true
+    },
+    {
+      "key": "anonymous_file_id",
+      "value": "",
+      "description": "File ID for anonymous uploads (auto-populated)",
+      "enabled": true
+    },
+    {
+      "key": "anonymous_secret_key",
+      "value": "",
+      "description": "Secret key for anonymous file downloads (auto-populated)",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

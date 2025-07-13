@@ -6,6 +6,8 @@ const userFileRoutes = require("./routes/userFile.routes");
 const cors = require("cors");
 const helmet = require("helmet");
 const compression = require('compression');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
 const { apiLimiter, authLimiter } = require("./middlewares/rateLimiting.middleware");
 
 // Load env variables
@@ -20,15 +22,74 @@ app.use(helmet());
 app.use(cors());
 app.use(compression());
 
-// Routes
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: API Status Check
+ *     description: Returns the current status of the FileVault API
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: API is running successfully
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: "FileVault API is running"
+ */
 app.get("/", (req, res) => {
   res.send("FileVault API is running");
 });
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Health Check
+ *     description: Returns the health status of the API and its dependencies
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "UP"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 uptime:
+ *                   type: number
+ *                   description: Server uptime in seconds
+ */
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "UP" });
+  res.status(200).json({ 
+    status: "UP",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'FileVault API Documentation',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    docExpansion: 'list',
+    filter: true,
+    showExtensions: true,
+    showCommonExtensions: true
+  }
+}));
+
+// Routes
 app.use("/api/v1/auth", authLimiter, authRoutes);
 app.use("/api/v1/files", fileRoutes);
 app.use("/api/v1", userFileRoutes);

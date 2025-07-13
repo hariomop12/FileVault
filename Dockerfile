@@ -12,13 +12,7 @@ COPY package*.json ./
 RUN npm install --omit=dev
 
 # Copy source code
-COPY FileVault/ ./FileVault/
-
-# Print environment variables for debugging (exclude secrets)
-RUN echo "NODE_ENV: $NODE_ENV"
-RUN echo "PORT: $PORT"
-RUN echo "AWS_REGION is set: $(if [ -n "$AWS_REGION" ]; then echo 'yes'; else echo 'no'; fi)"
-RUN echo "AWS_BUCKET_NAME is set: $(if [ -n "$AWS_BUCKET_NAME" ]; then echo 'yes'; else echo 'no'; fi)"
+COPY . ./
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -28,4 +22,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start the app
-CMD ["node", "FileVault/src/server.js"]
+CMD ["node", "server.js"]
