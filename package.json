@@ -6,8 +6,8 @@
     "test": "tests"
   },
   "scripts": {
-    "start": "node FileVault/src/server.js",
-    "dev": "nodemon FileVault/src/server.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "build": "npm install",
     "migrate": "dbmate up",
     "postinstall": "echo 'Migrations will run on startup'",

@@ -1,14 +1,17 @@
-# Logs
-logs
-*.log
+# Dependencies
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 lerna-debug.log*
-.pnpm-debug.log*
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Runtime data
 pids
@@ -20,7 +23,7 @@ pids
 lib-cov
 
 # Coverage directory used by tools like istanbul
-coverage
+coverage/
 *.lcov
 
 # nyc test coverage
@@ -39,11 +42,7 @@ bower_components
 build/Release
 
 # Dependency directories
-node_modules/
 jspm_packages/
-
-# Snowpack dependency directory (https://snowpack.dev/)
-web_modules/
 
 # TypeScript cache
 *.tsbuildinfo
@@ -72,13 +71,6 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -93,25 +85,10 @@ dist
 
 # Gatsby files
 .cache/
-# Comment in the public line in if your project uses Gatsby and not Next.js
-# https://nextjs.org/blog/next-9-1#public-directory-support
-# public
+public
 
-# vuepress build output
+# Vuepress build output
 .vuepress/dist
-
-# vuepress v2.x temp and cache directory
-.temp
-.cache
-
-# vitepress build output
-**/.vitepress/dist
-
-# vitepress cache directory
-**/.vitepress/cache
-
-# Docusaurus cache and generated files
-.docusaurus
 
 # Serverless directories
 .serverless/
@@ -134,4 +111,91 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-.qodo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Log files
+error.log
+combined.log
+app.log
+
+# Build/Compiled directories
+dist/
+build/
+public/build/
+lib/
+out/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.Trash-*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Certificate files (keep ca.pem as it's needed)
+*.pem
+!ca.pem
+*.key
+*.crt
+*.cert
+
+# AWS and Cloud credentials
+.aws/
+credentials
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettiercache
+
+# Package manager lock files (choose one)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Local database backups
+*.backup
+*.bak
+
+# Generated files
+*.jar
+*.class
