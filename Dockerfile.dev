@@ -1,0 +1,33 @@
+FROM node:18-slim
+
+WORKDIR /app
+
+# Install system dependencies including postgresql-client for migrations
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3 \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files first for better caching
+COPY package*.json ./
+
+# Install ALL dependencies (including dev dependencies for nodemon)
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Set environment variables for development
+ENV NODE_ENV=development
+ENV PORT=3000
+
+# Expose the port
+EXPOSE 3000
+
+# Use nodemon for hot reloading in development
+CMD ["npm", "run", "dev"]

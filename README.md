@@ -167,7 +167,7 @@ FileVault addresses these challenges by providing:
 ## 📦 Installation
 
 ### **Prerequisites**
-- Node.js 18+ and npm
+- Node.js 18+ and pnpm
 - PostgreSQL database
 - AWS S3 bucket and credentials
 - SMTP email service (Gmail/SendGrid)
@@ -180,7 +180,7 @@ cd FileVault
 
 ### **2. Install Dependencies**
 ```bash
-npm install
+pnpm install
 ```
 
 ### **3. Environment Setup**
@@ -192,7 +192,7 @@ cp .env.example .env
 ### **4. Database Setup**
 ```bash
 # Run migrations
-npm run migrate
+pnpm run migrate
 
 # Or manually
 dbmate up
@@ -201,10 +201,10 @@ dbmate up
 ### **5. Start Development Server**
 ```bash
 # Development (with auto-restart)
-npm run dev
+pnpm run dev
 
 # Production
-npm start
+pnpm start
 ```
 
 ---
@@ -389,14 +389,14 @@ services:
 ### **Test Suite Overview**
 ```bash
 # Run all tests
-npm test
+pnpm test
 
 # Run specific test files
-npm test auth.test.js
-npm test file.controller.test.js
+pnpm test auth.test.js
+pnpm test file.controller.test.js
 
 # Test coverage
-npm run test:coverage
+pnpm run test:coverage
 ```
 
 ### **Test Categories**

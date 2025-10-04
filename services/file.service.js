@@ -1,4 +1,4 @@
-const { s3Client } = require("../config/s3");
+const { s3Client, storageConfig } = require("../config/s3");
 const {
   PutObjectCommand,
   GetObjectCommand,
@@ -37,7 +37,7 @@ const FileService = {
         result.rows.map(async (file) => {
           try {
             const command = new GetObjectCommand({
-              Bucket: process.env.AWS_BUCKET_NAME,
+              Bucket: storageConfig.bucketName,
               Key: file.s3_key,
             });
 
@@ -121,7 +121,7 @@ const FileService = {
   
       // Generate signed URL
       const command = new GetObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME,
+        Bucket: storageConfig.bucketName,
         Key: fileData.s3_key 
       });
   
@@ -160,7 +160,7 @@ const FileService = {
         // Delete from S3
         await s3Client.send(
           new DeleteObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME,
+            Bucket: storageConfig.bucketName,
             Key: s3Key,
           })
         );
@@ -225,9 +225,9 @@ const FileService = {
       const secretKey = crypto.randomBytes(16).toString("hex");
       const s3Key = `user-${userId}/${fileId}-${file.originalname}`;
 
-      // Upload file to S3
+      // Upload file to R2/S3
       const params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
+        Bucket: storageConfig.bucketName,
         Key: s3Key,
         Body: file.buffer,
         ContentType: file.mimetype,

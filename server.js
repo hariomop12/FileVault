@@ -1,29 +1,37 @@
-const { exec } = require('child_process');
-const app = require('./app'); // Add this line to import your app!
-
-// Logger if you have one
+const app = require('./app');
 const logger = require('./utils/logger');
 
-if (process.env.DATABASE_URL) {
-  console.log('Running database migrations...');
-  exec('dbmate up', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Migration error: ${error.message}`);
-      // Continue starting the server even if migrations fail
-    }
-    if (stdout) console.log(`Migration output: ${stdout}`);
-    if (stderr) console.error(`Migration stderr: ${stderr}`);
+// Check database connection before starting server
+async function checkDatabaseConnection() {
+  try {
+    const { Pool } = require('pg');
+    const testPool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: 5000,
+    });
     
-    startServer();
-  });
-} else {
-  console.log('No DATABASE_URL found, skipping migrations');
-  startServer();
+    await testPool.query('SELECT 1');
+    console.log('✅ Database connection successful');
+    await testPool.end();
+    return true;
+  } catch (error) {
+    console.log(`❌ DB connection failed: ${error.message}`);
+    return false;
+  }
 }
 
-function startServer() {
+// Start server with database connection check
+async function startServer() {
+  if (process.env.DATABASE_URL) {
+    console.log('Checking database connection...');
+    await checkDatabaseConnection();
+  }
+  
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 FileVault server running on port ${PORT} - Hot reload test successful!`);
   });
 }
+
+// Initialize the server
+startServer();

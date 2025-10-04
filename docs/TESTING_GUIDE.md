@@ -192,7 +192,7 @@ pm.environment.set('test_filename', `test_file_${timestamp}.pdf`);
 ### **Newman CLI Testing**
 ```bash
 # Install Newman
-npm install -g newman
+pnpm install -g newman
 
 # Run collection
 newman run postman/FileVault_API_Collection.json \
@@ -213,7 +213,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run Postman tests
         run: |
-          npm install -g newman
+          pnpm install -g newman
           newman run postman/FileVault_API_Collection.json
 ```
 
@@ -258,7 +258,7 @@ jobs:
 
 ```bash
 # Start server
-npm run dev
+pnpm run dev
 
 # Health check
 curl http://localhost:3000/health

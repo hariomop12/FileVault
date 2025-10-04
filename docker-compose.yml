@@ -33,4 +33,24 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      
+
+  postgres:
+    image: postgres:15
+     environment:
+      POSTGRES_DB: filevault_dev
+      POSTGRES_USER: filevault
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - filevault-dev
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  filevault-dev:
+    driver: bridge

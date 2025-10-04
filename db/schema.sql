@@ -1,3 +1,8 @@
+\restrict AWn0OxW3K4hZtnfLLSwHU6LxRYbovIFACTTiIEcKYRYDqtBHfOV7sFZ2k2F5NzG
+
+-- Dumped from database version 15.14 (Debian 15.14-1.pgdg13+1)
+-- Dumped by pg_dump version 15.14 (Debian 15.14-0+deb12u1)
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -404,6 +409,8 @@ ALTER TABLE ONLY public.filevault_shared_links
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict AWn0OxW3K4hZtnfLLSwHU6LxRYbovIFACTTiIEcKYRYDqtBHfOV7sFZ2k2F5NzG
 
 
 --
