@@ -1,4 +1,4 @@
-const { s3Client } = require("../config/s3");
+const { s3Client } = require("../config/R2");
 const { PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { pool, query } = require("../config/db");

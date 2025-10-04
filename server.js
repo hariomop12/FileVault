@@ -4,19 +4,12 @@ const logger = require('./utils/logger');
 // Check database connection before starting server
 async function checkDatabaseConnection() {
   try {
-    const { Pool } = require('pg');
-    const testPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: 5000,
-    });
-    
-    await testPool.query('SELECT 1');
+    const { testConnection } = require('./config/db');
+    await testConnection();
     console.log('✅ Database connection successful');
-    await testPool.end();
-    return true;
   } catch (error) {
-    console.log(`❌ DB connection failed: ${error.message}`);
-    return false;
+    console.error('❌ Database connection failed:', error.message);
+    process.exit(1);
   }
 }
 

@@ -6,61 +6,21 @@ const pgMonitor = require("pg-monitor");
 const logger = require("../utils/logger");
 
 // Configuration for database connection
-let poolConfig;
-
-if (process.env.DATABASE_URL) {
-  // Use DATABASE_URL for external services like Aiven
-  const aivenCertPath = path.join(__dirname, "ca-aiven.pem");
-  const customCertPath = path.join(__dirname, "ca.pem");
-  let sslConfig = true; // Start with simple SSL requirement
-  
-  // Try to load Aiven CA certificate first, then custom certificate
-  try {
-    let sslCert = null;
-    let certSource = "";
+const poolConfig = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  database: process.env.DB_DATABASE,
+  ssl: {
+    rejectUnauthorized: true,
+    ca: fs.readFileSync(path.join(__dirname, "ca-aiven.pem")).toString()
+  },
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 20000,
+  max: 20
+};
     
-    if (fs.existsSync(aivenCertPath)) {
-      sslCert = fs.readFileSync(aivenCertPath, "utf8");
-      certSource = "Aiven official";
-    } else if (fs.existsSync(customCertPath)) {
-      sslCert = fs.readFileSync(customCertPath, "utf8");
-      certSource = "custom";
-    }
-    
-    if (sslCert) {
-      sslConfig = {
-        ca: sslCert,
-        rejectUnauthorized: true  // Use proper SSL validation with correct certificate
-      };
-      logger.info(`✅ Using ${certSource} CA certificate for database SSL connection`);
-    } else {
-      logger.info("🔒 Using default SSL settings for database connection");
-    }
-  } catch (error) {
-    logger.warn("⚠️ SSL certificate load failed, using simple SSL mode:", error.message);
-    sslConfig = { rejectUnauthorized: false };
-  }
-  
-  poolConfig = {
-    connectionString: process.env.DATABASE_URL,
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 20000,
-    ssl: sslConfig
-  };
-} else {
-  // Fallback to individual environment variables
-  poolConfig = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_DATABASE,
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 20000,
-    ssl: false
-  };
-}
-
 const pool = new Pool(poolConfig);
 
 // 📊 Monitor Database Queries (for Development)
@@ -105,10 +65,17 @@ const query = async (text, params) => {
   }
 };
 
-module.exports = { pool, query };
+// Test the database connection
+async function testConnection() {
+  try {
+    const client = await pool.connect();
+    logger.info('Database connection successful');
+    client.release();
+    return true;
+  } catch (err) {
+    logger.error(`Database connection failed: ${err.message}`);
+    return false;
+  }
+}
 
-
-
-
-
- 
+module.exports = { pool, query, testConnection };

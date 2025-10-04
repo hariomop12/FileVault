@@ -1,32 +1,22 @@
 const { S3Client, ListObjectsV2Command } = require("@aws-sdk/client-s3");
+require('dotenv').config();
 
 // Environment variables are loaded by the runtime (docker-compose, node process, etc.)
-// No need to explicitly load dotenv files
-
-// Check if using Cloudflare R2 or AWS S3
 const isR2 = process.env.R2_ENDPOINT && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_BUCKET_NAME;
-const isAWS = process.env.AWS_REGION && process.env.AWS_BUCKET_NAME && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY;
 
-if (!isR2 && !isAWS) {
-  throw new Error("❌ Missing required storage environment variables. Please configure either R2 or AWS S3 credentials.");
+if (!isR2) {
+  throw new Error("❌ Missing required R2 storage environment variables.");
 }
 
 // Use R2 if available, otherwise fallback to AWS
-const storageConfig = isR2 ? {
+const storageConfig =  {
   type: 'R2',
   endpoint: process.env.R2_ENDPOINT,
   region: 'auto', // R2 uses 'auto' as region
   bucketName: process.env.R2_BUCKET_NAME,
   accessKeyId: process.env.R2_ACCESS_KEY_ID,
   secretAccessKey: process.env.R2_SECRET_ACCESS_KEY
-} : {
-  type: 'AWS',
-  region: process.env.AWS_REGION,
-  bucketName: process.env.AWS_BUCKET_NAME,
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-};
-
+} 
 // Hide sensitive logs
 console.log(`${storageConfig.type} Storage Configuration Loaded: ✅`);
 console.log(`${storageConfig.type} Credentials:`, storageConfig.accessKeyId && storageConfig.secretAccessKey ? "✅ Yes" : "❌ No");

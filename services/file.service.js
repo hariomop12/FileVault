@@ -1,4 +1,4 @@
-const { s3Client, storageConfig } = require("../config/s3");
+const { s3Client, storageConfig } = require("../config/R2");
 const {
   PutObjectCommand,
   GetObjectCommand,

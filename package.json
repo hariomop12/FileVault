@@ -10,7 +10,7 @@
     "dev": "nodemon server.js --watch . --ext js,json --ignore node_modules",
     "dev:docker": "docker compose -f docker-compose.dev.yml up --build",
     "dev:docker:down": "docker compose -f docker-compose.dev.yml down -v",
-    "build": "pnpm install",
+    "build": "npm install",
     "migrate": "dbmate up",
     "postinstall": "echo 'Migrations will run on startup'",
     "db:migrate": "dbmate up"
