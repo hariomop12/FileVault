@@ -1,9 +1,9 @@
 # Dependencies
 node_modules/
-ppnpm-debug.log*
+npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pppnpm-debug.log*
+npm-debug.log*
 lerna-debug.log*
 
 # Environment variables
@@ -47,8 +47,8 @@ jspm_packages/
 # TypeScript cache
 *.tsbuildinfo
 
-# Optional ppnpm cache directory
-.ppnpm
+# Optional npm cache directory
+.npm
 
 # Optional eslint cache
 .eslintcache
@@ -65,7 +65,7 @@ jspm_packages/
 # Optional REPL history
 .node_repl_history
 
-# Output of 'ppnpm pack'
+# Output of 'npm pack'
 *.tgz
 
 # Yarn Integrity file
@@ -115,11 +115,11 @@ public
 # Logs
 logs/
 *.log
-ppnpm-debug.log*
+npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-.pppnpm-debug.log*
+.npm-debug.log*
 
 # Log files
 error.log
@@ -190,7 +190,7 @@ coverage/
 # Package manager lock files (choose one)
 # package-lock.json
 # yarn.lock
-# pppnpm-lock.yaml
+# npm-lock.yaml
 
 # Local database backups
 *.backup

@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 COPY package*.json ./
 
 # Install ALL dependencies (including dev dependencies for nodemon)
-RUN pnpm install
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -30,4 +30,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Use nodemon for hot reloading in development
-CMD ["pnpm", "run", "dev"]
+CMD ["npm", "run", "dev"]

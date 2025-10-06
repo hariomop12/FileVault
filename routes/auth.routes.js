@@ -120,23 +120,18 @@ router.post("/login", authController.login);
 /**
  * @swagger
  * /api/v1/auth/verify-email:
- *   post:
+ *   get:
  *     summary: Verify email address
  *     description: Verify user's email using verification token
  *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - token
- *             properties:
- *               token:
- *                 type: string
- *                 description: Email verification token
- *                 example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Email verification token
+ *         example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *     responses:
  *       200:
  *         description: Email verified successfully
@@ -151,7 +146,7 @@ router.post("/login", authController.login);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/verify-email", authController.verifyEmail);
+router.get("/verify-email", authController.verifyEmail);
 
 /**
  * @swagger

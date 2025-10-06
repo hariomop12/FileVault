@@ -65,7 +65,7 @@ const AuthService = {
   sendVerificationEmail: async (email, name, token) => {
     try {
       const baseUrl =
-        process.env.FRONTEND_URL || "http://localhost:5000/api/v1/auth";
+        process.env.FRONTEND_URL || "http://localhost:3000/api/v1/auth";
       const verificationLink = `${baseUrl}/verify-email?token=${token}`;
 
       const mailOptions = {

@@ -65,8 +65,8 @@ exports.uploadFile = async (req, res) => {
     const fileId = generateId(10);
     const secretKey = generateSecretKey();
     const fileName = `${fileId}-${file.originalname}`;
-    const bucket = process.env.AWS_BUCKET_NAME;
-    const region = process.env.AWS_REGION || "eu-north-1";
+    const bucket = process.env.R2_BUCKET_NAME;
+   
 
     // Upload file to S3 using AWS SDK v3
     const params = {
@@ -81,7 +81,7 @@ exports.uploadFile = async (req, res) => {
     await s3Client.send(command);
 
     // Generate the file URL
-    const fileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${fileName}`;
+    const fileUrl = `${process.env.R2_ENDPOINT}/${fileName}`;
 
     // Save metadata to database - fixed the SQL typo (INFO -> INTO)
     await pool.query(
@@ -125,7 +125,7 @@ exports.downloadFile = async (req, res) => {
 
     // Generate a signed URL for the file using AWS SDK v3
     const command = new GetObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
+      Bucket: process.env.R2_BUCKET_NAME,
       Key: fileData.s3_key,
     });
 

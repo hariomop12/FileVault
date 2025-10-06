@@ -39,7 +39,7 @@ app.use(compression());
  *               example: "FileVault API is running"
  */
 app.get("/", (req, res) => {
-  res.send("FileVault API is running");
+  res.json("FileVault API is running");
 });
 
 /**

@@ -1,16 +1,16 @@
 # 🔐 FileVault - Secure Cloud File Storage API
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Node.js-35. **Service Layer** handles Cloudflare R2 operations9933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/Express.js-404D59?style=for-the-badge&logo=express&logoColor=white" alt="Express.js">
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/Amazon_AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS">
+  <img src="https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare R2">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white" alt="JWT">
 </div>
 
 <div align="center">
-  <h3>🚀 Enterprise-grade secure file storage solution with advanced authentication and AWS S3 integration</h3>
+  <h3>🚀 Enterprise-grade secure file storage solution with advanced authentication and Cloudflare R2 integration</h3>
 </div>
 
 ---
@@ -37,7 +37,7 @@
 
 ## 🎯 Overview
 
-**FileVault** is a production-ready, enterprise-grade file storage API built with Node.js and Express.js. It provides secure file upload, storage, and retrieval capabilities with robust authentication, advanced security features, and seamless AWS S3 integration.
+**FileVault** is a production-ready, enterprise-grade file storage API built with Node.js and Express.js. It provides secure file upload, storage, and retrieval capabilities with robust authentication, advanced security features, and seamless Cloudflare R2 integration.
 
 ### 🎯 Problem Solved
 Traditional file storage solutions often lack:
@@ -50,7 +50,7 @@ Traditional file storage solutions often lack:
 ### 💡 Solution Delivered
 FileVault addresses these challenges by providing:
 - **JWT-based authentication** with email verification
-- **AWS S3 integration** for unlimited scalable storage
+- **Cloudflare R2 integration** for unlimited scalable storage
 - **Advanced rate limiting** with IP-based protection
 - **Comprehensive security** with Helmet.js and CORS
 - **Professional logging** with Winston
@@ -77,10 +77,10 @@ FileVault addresses these challenges by providing:
 - **Shareable links** with expiration controls
 
 ### ☁️ **Cloud Integration**
-- **AWS S3 integration** for scalable storage
+- **Cloudflare R2 integration** for scalable storage
 - **Presigned URLs** for secure direct downloads
 - **Automatic file organization** with unique naming
-- **Multi-region support** for global distribution
+- **Global edge distribution** with Cloudflare network
 
 ### 📊 **Monitoring & Logging**
 - **Winston logging** with multiple transport layers
@@ -106,7 +106,7 @@ FileVault addresses these challenges by providing:
                               │
                               │
                     ┌─────────────────┐
-                    │    AWS S3       │
+                    │ Cloudflare R2   │
                     │  File Storage   │
                     └─────────────────┘
 ```
@@ -132,7 +132,7 @@ FileVault addresses these challenges by providing:
 
 ### **Database & Storage**
 - **PostgreSQL** - Primary database with SSL
-- **AWS S3** - Cloud file storage
+- **Cloudflare R2** - S3-compatible cloud file storage
 - **pg** - PostgreSQL client with connection pooling
 - **dbmate** - Database migrations
 
@@ -145,7 +145,7 @@ FileVault addresses these challenges by providing:
 
 ### **File Processing**
 - **Multer** - Multipart form data handling
-- **AWS SDK v3** - S3 operations and presigned URLs
+- **AWS SDK v3** - S3-compatible operations for R2 and presigned URLs
 - **File validation** - Type and size constraints
 
 ### **Monitoring & Logging**
@@ -167,9 +167,9 @@ FileVault addresses these challenges by providing:
 ## 📦 Installation
 
 ### **Prerequisites**
-- Node.js 18+ and ppnpm
+- Node.js 18+ and npm
 - PostgreSQL database
-- AWS S3 bucket and credentials
+- Cloudflare R2 bucket and credentials
 - SMTP email service (Gmail/SendGrid)
 
 ### **1. Clone Repository**
@@ -180,7 +180,7 @@ cd FileVault
 
 ### **2. Install Dependencies**
 ```bash
-ppnpm install
+npm install
 ```
 
 ### **3. Environment Setup**
@@ -192,7 +192,7 @@ cp .env.example .env
 ### **4. Database Setup**
 ```bash
 # Run migrations
-ppnpm run migrate
+npm run migrate
 
 # Or manually
 dbmate up
@@ -201,10 +201,10 @@ dbmate up
 ### **5. Start Development Server**
 ```bash
 # Development (with auto-restart)
-ppnpm run dev
+npm run dev
 
 # Production
-ppnpm start
+npm start
 ```
 
 ---
@@ -220,10 +220,10 @@ ppnpm start
 | `DATABASE_URL` | PostgreSQL connection string | - | Yes |
 | `JWT_SECRET` | JWT signing secret | - | Yes |
 | `JWT_EXPIRES_IN` | Token expiration | `7d` | No |
-| `AWS_REGION` | AWS region | `us-east-1` | Yes |
-| `AWS_ACCESS_KEY_ID` | AWS access key | - | Yes |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key | - | Yes |
-| `AWS_BUCKET_NAME` | S3 bucket name | - | Yes |
+| `R2_ENDPOINT` | Cloudflare R2 endpoint URL | - | Yes |
+| `R2_ACCESS_KEY_ID` | R2 access key ID | - | Yes |
+| `R2_SECRET_ACCESS_KEY` | R2 secret access key | - | Yes |
+| `R2_BUCKET_NAME` | R2 bucket name | - | Yes |
 | `EMAIL_HOST` | SMTP host | `smtp.gmail.com` | Yes |
 | `EMAIL_PORT` | SMTP port | `587` | No |
 | `EMAIL_USER` | SMTP username | - | Yes |
@@ -298,7 +298,7 @@ GET /                            # API status
 ### **🔐 File Security**
 - **File type validation** against whitelist
 - **Size constraints** to prevent abuse
-- **Secure S3 presigned URLs** with expiration
+- **Secure R2 presigned URLs** with expiration
 - **User ownership validation** for protected files
 
 ### **🌐 Network Security**
@@ -389,14 +389,14 @@ services:
 ### **Test Suite Overview**
 ```bash
 # Run all tests
-ppnpm test
+npm test
 
 # Run specific test files
-ppnpm test auth.test.js
-ppnpm test file.controller.test.js
+npm test auth.test.js
+npm test file.controller.test.js
 
 # Test coverage
-ppnpm run test:coverage
+npm run test:coverage
 ```
 
 ### **Test Categories**
@@ -441,7 +441,7 @@ ppnpm run test:coverage
 ### **🎯 Technical Achievements**
 - **Scalable Architecture** - Handles thousands of concurrent users
 - **Enterprise Security** - Production-ready authentication and authorization
-- **Cloud Integration** - Seamless AWS S3 integration with cost optimization
+- **Cloud Integration** - Seamless Cloudflare R2 integration with cost optimization
 - **Performance Optimization** - Sub-100ms response times with proper caching
 
 ### **📊 Key Metrics**
@@ -475,7 +475,7 @@ ppnpm run test:coverage
 
 ## 🙏 Acknowledgments
 
-- **AWS** for excellent cloud storage services
+- **Cloudflare** for excellent R2 cloud storage services
 - **Node.js Community** for robust ecosystem
 - **PostgreSQL** for reliable database solution
 - **Open Source Contributors** for amazing libraries

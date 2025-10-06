@@ -30,7 +30,13 @@ const s3Client = new S3Client({
     secretAccessKey: storageConfig.secretAccessKey,
   },
   // Force path style for R2 compatibility
-  forcePathStyle: storageConfig.type === 'R2'
+  forcePathStyle: true, // Always true for R2
+  // Additional R2-specific configuration
+  ...(storageConfig.type === 'R2' && {
+    // Ensure proper R2 configuration
+    s3ForcePathStyle: true,
+    signatureVersion: 'v4'
+  })
 });
 
 // Function to test storage connection

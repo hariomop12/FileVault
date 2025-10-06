@@ -80,6 +80,26 @@ router.post(
     uploadLimiter,  // Add rate limiting to anonymous uploads
     fileController.uploadMiddleware, 
     fileController.uploadFile
+    /* 
+    #swagger.tags = ['Anonymous Files']
+    #swagger.summary = 'Anonymous file upload'
+    #swagger.description = 'Upload a file without authentication (public access)'
+    #swagger.consumes = ['multipart/form-data']
+    #swagger.parameters['file'] = {
+      in: 'formData',
+      type: 'file',
+      required: true,
+      description: 'File to upload (max 5GB)'
+    }
+    #swagger.responses[200] = {
+      description: 'File uploaded successfully',
+      schema: { $ref: '#/definitions/ApiResponse' }
+    }
+    #swagger.responses[400] = {
+      description: 'Bad request',
+      schema: { $ref: '#/definitions/ErrorResponse' }
+    }
+    */
   );
 
 /**
@@ -141,6 +161,28 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/download", fileController.downloadFile);
+router.post("/download", fileController.downloadFile
+    /* 
+    #swagger.tags = ['Anonymous Files']
+    #swagger.summary = 'Anonymous file download'
+    #swagger.description = 'Download a file using file ID and secret key'
+    #swagger.parameters['body'] = {
+      in: 'body',
+      required: true,
+      schema: {
+        type: 'object',
+        required: ['file_id', 'secret_key'],
+        properties: {
+          file_id: { type: 'string', example: 'abc123def456' },
+          secret_key: { type: 'string', example: 'xyz789secret' }
+        }
+      }
+    }
+    #swagger.responses[200] = {
+      description: 'Download link generated successfully',
+      schema: { $ref: '#/definitions/ApiResponse' }
+    }
+    */
+);
   
 module.exports = router;
