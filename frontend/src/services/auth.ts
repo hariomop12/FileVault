@@ -4,7 +4,8 @@ import { AuthResponse, LoginCredentials, RegisterCredentials, ApiResponse } from
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  // Use baseURL only when not using proxy (in production)
+  baseURL: process.env.NODE_ENV === 'production' ? API_BASE_URL : '',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -12,6 +13,11 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
+  // Don't add auth token to auth endpoints (login, register, etc.)
+  if (config.url?.includes('/api/v1/auth/')) {
+    return config;
+  }
+  
   const token = localStorage.getItem('auth_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -34,17 +40,23 @@ api.interceptors.response.use(
 
 export const authService = {
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
+    console.log('🔧 AuthService.register called with:', credentials);
+    console.log('🌐 Making request to:', api.defaults.baseURL + '/api/v1/auth/signup');
     const response = await api.post('/api/v1/auth/signup', credentials);
+    console.log('📥 AuthService.register response:', response.data);
     return response.data;
   },
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    console.log('🔧 AuthService.login called with:', credentials);
+    console.log('🌐 Making request to:', api.defaults.baseURL + '/api/v1/auth/login');
     const response = await api.post('/api/v1/auth/login', credentials);
+    console.log('📥 AuthService.login response:', response.data);
     return response.data;
   },
 
   async verifyEmail(token: string): Promise<ApiResponse> {
-    const response = await api.post('/api/v1/auth/verify-email', { token });
+    const response = await api.get(`/api/v1/auth/verify-email?token=${token}`);
     return response.data;
   },
 

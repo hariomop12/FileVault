@@ -25,6 +25,7 @@ export interface AuthResponse {
   message: string;
   token?: string;
   user?: User;
+  verificationToken?: string; // For development mode
 }
 
 export interface FileUploadResponse {

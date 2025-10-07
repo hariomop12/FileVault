@@ -3,29 +3,68 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import DarkModeToggle from '../components/ui/DarkModeToggle';
 
+interface UserStats {
+  overview: {
+    total_files: number;
+    total_storage_used: number;
+    storage_limit: number;
+    storage_used_mb: number;
+    storage_limit_mb: number;
+    percentage_used: number;
+    remaining_storage: number;
+  };
+  file_types: Array<{
+    category: string;
+    count: number;
+    size: number;
+    size_mb: number;
+  }>;
+  activity: {
+    recent_uploads_7d: number;
+    public_files: number;
+  };
+}
+
 const Dashboard: React.FC = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadResult, setUploadResult] = useState<{
     file_id: string;
     secret_key: string;
     filename: string;
   } | null>(null);
-  const [stats, setStats] = useState({
-    totalFiles: 0,
-    storageUsed: 0,
-    recentUploads: 0,
-  });
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
+  // Upload file with simplified progress tracking
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
+    setUploadProgress(0);
+
+    // Start progress simulation
+    const simulateProgress = () => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 20 + 5; // 5-25% increments
+        if (progress >= 95) {
+          progress = 95;
+          clearInterval(interval);
+        }
+        setUploadProgress(Math.round(progress));
+      }, 200);
+      return interval;
+    };
+
+    const progressInterval = simulateProgress();
+
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
-      const response = await fetch('http://localhost:3000/api/v1/upload', {
+
+      const response = await fetch('/api/v1/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -33,25 +72,37 @@ const Dashboard: React.FC = () => {
         body: formData,
       });
 
+      // Clear progress simulation
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Small delay to show completion
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       if (response.ok) {
         const data = await response.json();
-        if (data.data) {
+        if (data.success && data.data) {
           setUploadResult({
             file_id: data.data.file_id,
-            secret_key: data.data.secret_key,
+            secret_key: data.data.secret_key || 'N/A (Authenticated upload)',
             filename: data.data.file_name,
           });
           alert(`✅ File uploaded successfully!\nFile ID: ${data.data.file_id}`);
           fetchStats(); // Refresh stats after upload
+        } else {
+          throw new Error(data.message || 'Upload failed');
         }
       } else {
-        throw new Error('Upload failed');
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
+      clearInterval(progressInterval);
       console.error('Upload error:', error);
       alert('❌ Upload failed. Please try again.');
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -66,48 +117,34 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Fetch dashboard stats
+  // Fetch dashboard stats using the new comprehensive API
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/files', {
+      setStatsLoading(true);
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch('/api/v1/stats', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
       if (response.ok) {
         const data = await response.json();
-        const files = data.files || [];
-        const totalSize = files.reduce((sum: number, file: any) => sum + (file.file_size || 0), 0);
-        const recentCount = files.filter((file: any) => {
-          const uploadDate = new Date(file.upload_date);
-          const weekAgo = new Date();
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          return uploadDate > weekAgo;
-        }).length;
-
-        setStats({
-          totalFiles: files.length,
-          storageUsed: totalSize,
-          recentUploads: recentCount,
-        });
+        setStats(data.data);
+      } else {
+        console.error('Failed to fetch stats:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchStats();
   }, []);
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 MB';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
   
   return (
     <div className={`min-h-screen transition-all duration-300 ${
@@ -143,7 +180,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           {/* Total Files Card */}
           <div className={`relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:scale-105 ${
             theme === 'dark'
@@ -167,7 +204,7 @@ const Dashboard: React.FC = () => {
                 <p className={`text-2xl font-semibold transition-colors duration-300 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  {stats.totalFiles}
+                  {statsLoading ? '...' : stats?.overview.total_files || 0}
                 </p>
               </div>
             </div>
@@ -196,7 +233,12 @@ const Dashboard: React.FC = () => {
                 <p className={`text-2xl font-semibold transition-colors duration-300 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  {formatFileSize(stats.storageUsed)}
+                  {statsLoading ? '...' : `${stats?.overview.storage_used_mb || 0} MB`}
+                </p>
+                <p className={`text-xs transition-colors duration-300 ${
+                  theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`}>
+                  of {stats?.overview.storage_limit_mb || 2048} MB
                 </p>
               </div>
             </div>
@@ -225,12 +267,141 @@ const Dashboard: React.FC = () => {
                 <p className={`text-2xl font-semibold transition-colors duration-300 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  {stats.recentUploads}
+                  {statsLoading ? '...' : stats?.activity.recent_uploads_7d || 0}
+                </p>
+                <p className={`text-xs transition-colors duration-300 ${
+                  theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`}>
+                  this week
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Public Files Card */}
+          <div className={`relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:scale-105 ${
+            theme === 'dark'
+              ? 'bg-slate-800 border border-slate-700 shadow-xl'
+              : 'bg-white border border-gray-200 shadow-lg'
+          }`}>
+            <div className="flex items-center">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${
+                theme === 'dark' ? 'bg-orange-500/20' : 'bg-orange-50'
+              }`}>
+                <svg className={`h-6 w-6 ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className={`text-sm font-medium transition-colors duration-300 ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Public Files
+                </p>
+                <p className={`text-2xl font-semibold transition-colors duration-300 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  {statsLoading ? '...' : stats?.activity.public_files || 0}
+                </p>
+                <p className={`text-xs transition-colors duration-300 ${
+                  theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`}>
+                  shared publicly
                 </p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Comprehensive Stats Dashboard */}
+        {stats && !statsLoading && (
+          <div className="mb-8">
+            <div className={`rounded-xl p-6 transition-all duration-300 ${
+              theme === 'dark'
+                ? 'bg-slate-800 border border-slate-700'
+                : 'bg-white border border-gray-200 shadow-lg'
+            }`}>
+              <h2 className={`text-xl font-semibold mb-6 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                📊 Storage Overview
+              </h2>
+
+              {/* Storage Progress Bar */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className={`text-sm font-medium transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    Storage Usage
+                  </span>
+                  <span className={`text-sm transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {stats.overview.storage_used_mb} MB / {stats.overview.storage_limit_mb} MB
+                  </span>
+                </div>
+                <div className="bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(stats.overview.percentage_used, 100)}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                  <span className={`text-xs transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`}>
+                    {stats.overview.percentage_used.toFixed(1)}% used
+                  </span>
+                  <span className={`text-xs transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`}>
+                    {Math.round(stats.overview.remaining_storage / (1024 * 1024))} MB remaining
+                  </span>
+                </div>
+              </div>
+
+              {/* File Type Breakdown */}
+              {stats.file_types.length > 0 && (
+                <div>
+                  <h3 className={`text-lg font-medium mb-4 transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    📁 File Types
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {stats.file_types.map((fileType, index) => (
+                      <div key={index} className={`rounded-lg p-4 transition-all duration-300 ${
+                        theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`font-medium transition-colors duration-300 ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {fileType.category}
+                          </span>
+                          <span className={`text-sm px-2 py-1 rounded-full ${
+                            theme === 'dark' ? 'bg-slate-600 text-gray-300' : 'bg-gray-200 text-gray-700'
+                          }`}>
+                            {fileType.count}
+                          </span>
+                        </div>
+                        <div className={`text-lg font-semibold transition-colors duration-300 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {fileType.size_mb} MB
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {((fileType.size / stats.overview.total_storage_used) * 100).toFixed(1)}% of total
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Upload Success Notification */}
         {uploadResult && (
@@ -275,32 +446,56 @@ const Dashboard: React.FC = () => {
               Quick Actions
             </h3>
             <div className="space-y-3">
-              <button 
-                onClick={triggerFileUpload}
-                disabled={isUploading}
-                className={`w-full flex items-center justify-center p-3 rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  theme === 'dark'
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-              >
-                {isUploading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                    </svg>
-                    Upload New File
-                  </>
+              <div className="w-full">
+                <button 
+                  onClick={triggerFileUpload}
+                  disabled={isUploading}
+                  className={`w-full flex items-center justify-center p-3 rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    theme === 'dark'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  {isUploading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Uploading... {uploadProgress}%</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                      </svg>
+                      Upload New File
+                    </>
+                  )}
+                </button>
+                
+                {/* Progress Bar */}
+                {isUploading && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                        Upload Progress
+                      </span>
+                      <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                        {uploadProgress}%
+                      </span>
+                    </div>
+                    <div className={`w-full bg-gray-200 rounded-full h-2 ${
+                      theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+                    }`}>
+                      <div
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
                 )}
-              </button>
+              </div>
               <button 
                 onClick={() => navigate('/files')}
                 className={`w-full flex items-center p-3 rounded-lg transition-all duration-300 hover:scale-105 ${

@@ -24,22 +24,47 @@ const Login: React.FC = () => {
       return;
     }
 
+    console.log('🚀 Starting login process...');
+    console.log('📧 Email:', email);
+    
     try {
       // Use the auth service for login
+      console.log('🔐 Attempting login with:', { email });
       const response = await authService.login({ email, password });
-      console.log('✅ Login successful:', response);
+      console.log('✅ Raw response:', response);
       
       if (response.success && response.token) {
-        // Store the real JWT token and user data
+        // Store the real token and user info
         localStorage.setItem('auth_token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user || { name: 'User', email }));
+        localStorage.setItem('user', JSON.stringify(response.user));
+        console.log('💾 Stored auth token and user data');
+        console.log('🧭 Navigating to dashboard...');
         navigate('/dashboard');
       } else {
-        setError(response.message || 'Login failed: No token received');
+        console.log('❌ Login failed - no token in response');
+        setError(response.message || 'Login failed');
       }
     } catch (error: any) {
-      console.error('Login error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed. Please check your connection and try again.';
+      console.error('❌ Login error:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+        
+        // If user doesn't exist, suggest registration
+        if (errorMessage.includes('Invalid credentials') || errorMessage.includes('User not found')) {
+          errorMessage += ' - Try registering first if you don\'t have an account.';
+        }
+        
+        // If email not verified, provide helpful message
+        if (errorMessage.includes('Email not verified')) {
+          errorMessage += ' - Please check your email for verification link.';
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -104,7 +129,11 @@ const Login: React.FC = () => {
                 📧 Email address
               </label>
               <input
+                id="email"
+                name="email"
                 type="email"
+                autoComplete="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-300 ${
@@ -123,7 +152,11 @@ const Login: React.FC = () => {
                 🔑 Password
               </label>
               <input
+                id="password"
+                name="password"
                 type="password"
+                autoComplete="current-password"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-300 ${
