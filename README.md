@@ -1,7 +1,13 @@
 # 🔐 FileVault - Secure Cloud File Storage API
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Node.js-35. **Service Layer** handles Cloudflare R2 operations9933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
+  <img src="https://github.com/haropm/FileVault/actions/workflows/docker-build.yml/badge.svg" alt="CI/CD Pipeline">
+  <img src="https://img.shields.io/github/v/release/haropm/FileVault?style=flat-square" alt="Release">
+  <img src="https://img.shields.io/github/license/haropm/FileVault?style=flat-square" alt="License">
+</div>
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/Express.js-404D59?style=for-the-badge&logo=express&logoColor=white" alt="Express.js">
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare R2">

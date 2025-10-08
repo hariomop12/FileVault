@@ -217,6 +217,142 @@ const FileService = {
     }
   },
 
+  // Get user's total storage usage
+  getUserStorage: async (userId) => {
+    try {
+      console.log(`Getting storage usage for user ID: ${userId}`);
+
+      const result = await query(
+        `SELECT COALESCE(SUM(file_size), 0) as total_storage_used
+         FROM filevault_files_authed
+         WHERE user_id = $1`,
+        [userId]
+      );
+
+      const totalStorageUsed = parseInt(result.rows[0].total_storage_used) || 0;
+      const storageLimit = 2 * 1024 * 1024 * 1024; // 2GB in bytes
+      const storageUsedMB = Math.round(totalStorageUsed / (1024 * 1024));
+      const storageLimitMB = Math.round(storageLimit / (1024 * 1024));
+      const percentageUsed = Math.round((totalStorageUsed / storageLimit) * 100);
+
+      return {
+        total_storage_used: totalStorageUsed,
+        storage_limit: storageLimit,
+        storage_used_mb: storageUsedMB,
+        storage_limit_mb: storageLimitMB,
+        percentage_used: percentageUsed,
+        remaining_storage: Math.max(0, storageLimit - totalStorageUsed)
+      };
+    } catch (error) {
+      logger.error(`❌ Error getting user storage: ${error.message}`);
+      throw new Error("Failed to retrieve user storage information");
+    }
+  },
+
+  // Get user's total file count
+  getUserFileCount: async (userId) => {
+    try {
+      console.log(`Getting file count for user ID: ${userId}`);
+
+      const result = await query(
+        `SELECT COUNT(*) as total_files
+         FROM filevault_files_authed
+         WHERE user_id = $1`,
+        [userId]
+      );
+
+      return {
+        total_files: parseInt(result.rows[0].total_files) || 0
+      };
+    } catch (error) {
+      logger.error(`❌ Error getting user file count: ${error.message}`);
+      throw new Error("Failed to retrieve user file count");
+    }
+  },
+
+  // Get comprehensive user statistics (cool feature!)
+  getUserStats: async (userId) => {
+    try {
+      console.log(`Getting comprehensive stats for user ID: ${userId}`);
+
+      // Get storage info
+      const storageResult = await query(
+        `SELECT COALESCE(SUM(file_size), 0) as total_storage_used, COUNT(*) as total_files
+         FROM filevault_files_authed
+         WHERE user_id = $1`,
+        [userId]
+      );
+
+      // Get file type breakdown
+      const fileTypeResult = await query(
+        `SELECT
+           CASE
+             WHEN file_type LIKE 'image/%' THEN 'Images'
+             WHEN file_type LIKE 'video/%' THEN 'Videos'
+             WHEN file_type LIKE 'audio/%' THEN 'Audio'
+             WHEN file_type IN ('application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain') THEN 'Documents'
+             WHEN file_type LIKE 'application/%' THEN 'Applications'
+             ELSE 'Other'
+           END as category,
+           COUNT(*) as count,
+           COALESCE(SUM(file_size), 0) as size
+         FROM filevault_files_authed
+         WHERE user_id = $1
+         GROUP BY category
+         ORDER BY size DESC`,
+        [userId]
+      );
+
+      // Get recent activity (last 7 days)
+      const recentResult = await query(
+        `SELECT COUNT(*) as recent_uploads
+         FROM filevault_files_authed
+         WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '7 days'`,
+        [userId]
+      );
+
+      // Get public files count
+      const publicResult = await query(
+        `SELECT COUNT(*) as public_files
+         FROM filevault_files_authed
+         WHERE user_id = $1 AND is_public = true`,
+        [userId]
+      );
+
+      const totalStorageUsed = parseInt(storageResult.rows[0].total_storage_used) || 0;
+      const totalFiles = parseInt(storageResult.rows[0].total_files) || 0;
+      const storageLimit = 2 * 1024 * 1024 * 1024; // 2GB in bytes
+
+      // Format file type breakdown
+      const fileTypeBreakdown = fileTypeResult.rows.map(row => ({
+        category: row.category,
+        count: parseInt(row.count),
+        size: parseInt(row.size),
+        size_mb: Math.round(parseInt(row.size) / (1024 * 1024))
+      }));
+
+      return {
+        overview: {
+          total_files: totalFiles,
+          total_storage_used: totalStorageUsed,
+          storage_limit: storageLimit,
+          storage_used_mb: Math.round(totalStorageUsed / (1024 * 1024)),
+          storage_limit_mb: Math.round(storageLimit / (1024 * 1024)),
+          percentage_used: Math.round((totalStorageUsed / storageLimit) * 100),
+          remaining_storage: Math.max(0, storageLimit - totalStorageUsed)
+        },
+        file_types: fileTypeBreakdown,
+        activity: {
+          recent_uploads_7d: parseInt(recentResult.rows[0].recent_uploads) || 0,
+          public_files: parseInt(publicResult.rows[0].public_files) || 0
+        }
+      };
+    } catch (error) {
+      logger.error(`❌ Error getting user stats: ${error.message}`);
+      throw new Error("Failed to retrieve user statistics");
+    }
+  },
+
   // Upload file for authenticated user
   uploadUsersFile: async (file, userId) => {
     try {

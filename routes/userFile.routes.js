@@ -134,6 +134,40 @@ router.get("/files", UserFileController.getUserFiles);
 
 /**
  * @swagger
+ * /api/v1/files/count:
+ *   get:
+ *     summary: Get user's total file count
+ *     description: Retrieve the total number of files uploaded by the authenticated user
+ *     tags: [User Files]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: File count retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total_files:
+ *                       type: integer
+ *                       description: Total number of files
+ *                       example: 42
+ *       401:
+ *         description: Unauthorized
+ *       429:
+ *         description: Rate limit exceeded
+ */
+router.get("/files/count", UserFileController.getFileCount);
+
+/**
+ * @swagger
  * /api/v1/files/{id}:
  *   get:
  *     summary: Get file metadata
@@ -324,5 +358,144 @@ router.delete("/files/:id", UserFileController.deleteFile);
  *         description: File not found
  */
 router.post("/files/:id/share", UserFileController.createShareableLink);
+
+/**
+ * @swagger
+ * /api/v1/storage:
+ *   get:
+ *     summary: Get user's storage usage
+ *     description: Retrieve the authenticated user's total storage used and remaining quota (2GB free limit)
+ *     tags: [User Files]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Storage information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total_storage_used:
+ *                       type: integer
+ *                       description: Total storage used in bytes
+ *                       example: 524288000
+ *                     storage_limit:
+ *                       type: integer
+ *                       description: Storage limit in bytes (2GB)
+ *                       example: 2147483648
+ *                     storage_used_mb:
+ *                       type: integer
+ *                       description: Storage used in MB
+ *                       example: 500
+ *                     storage_limit_mb:
+ *                       type: integer
+ *                       description: Storage limit in MB
+ *                       example: 2048
+ *                     percentage_used:
+ *                       type: integer
+ *                       description: Percentage of storage used
+ *                       example: 25
+ *                     remaining_storage:
+ *                       type: integer
+ *                       description: Remaining storage in bytes
+ *                       example: 1624293648
+ *       401:
+ *         description: Unauthorized
+ *       429:
+ *         description: Rate limit exceeded
+ */
+router.get("/storage", UserFileController.getStorage);
+
+/**
+ * @swagger
+ * /api/v1/stats:
+ *   get:
+ *     summary: Get comprehensive user statistics
+ *     description: Retrieve detailed statistics about the user's files including storage usage, file type breakdown, and activity metrics
+ *     tags: [User Files]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     overview:
+ *                       type: object
+ *                       properties:
+ *                         total_files:
+ *                           type: integer
+ *                           example: 42
+ *                         total_storage_used:
+ *                           type: integer
+ *                           description: Storage used in bytes
+ *                           example: 524288000
+ *                         storage_limit:
+ *                           type: integer
+ *                           description: Storage limit in bytes
+ *                           example: 2147483648
+ *                         storage_used_mb:
+ *                           type: integer
+ *                           example: 500
+ *                         storage_limit_mb:
+ *                           type: integer
+ *                           example: 2048
+ *                         percentage_used:
+ *                           type: integer
+ *                           example: 25
+ *                         remaining_storage:
+ *                           type: integer
+ *                           example: 1624293648
+ *                     file_types:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           category:
+ *                             type: string
+ *                             example: "Images"
+ *                           count:
+ *                             type: integer
+ *                             example: 15
+ *                           size:
+ *                             type: integer
+ *                             description: Size in bytes
+ *                             example: 209715200
+ *                           size_mb:
+ *                             type: integer
+ *                             example: 200
+ *                     activity:
+ *                       type: object
+ *                       properties:
+ *                         recent_uploads_7d:
+ *                           type: integer
+ *                           description: Files uploaded in last 7 days
+ *                           example: 5
+ *                         public_files:
+ *                           type: integer
+ *                           description: Number of public files
+ *                           example: 3
+ *       401:
+ *         description: Unauthorized
+ *       429:
+ *         description: Rate limit exceeded
+ */
+router.get("/stats", UserFileController.getStats);
 
 module.exports = router;

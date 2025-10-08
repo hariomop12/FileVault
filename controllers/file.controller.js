@@ -302,6 +302,69 @@ const UserFileController = {
       });
     }
   },
+
+  // Get user storage usage
+  getStorage: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      console.log(`Getting storage for user ID: ${userId}`);
+
+      const result = await FileService.getUserStorage(userId);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error(`❌ Error getting user storage: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve storage information",
+      });
+    }
+  },
+
+  // Get user file count
+  getFileCount: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      console.log(`Getting file count for user ID: ${userId}`);
+
+      const result = await FileService.getUserFileCount(userId);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error(`❌ Error getting user file count: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve file count",
+      });
+    }
+  },
+
+  // Get comprehensive user statistics
+  getStats: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      console.log(`Getting stats for user ID: ${userId}`);
+
+      const result = await FileService.getUserStats(userId);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error(`❌ Error getting user stats: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve user statistics",
+      });
+    }
+  },
 };
 
 module.exports = {

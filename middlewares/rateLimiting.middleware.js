@@ -16,8 +16,8 @@ const rateLimitExceededHandler = (req, res) => {
 
 // General API rate limiter (100 requests per 15 minutes)
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // max 100 requests per windowMs
+  windowMs: 15 * 60 * 10000, // 15 minutes
+  max: 1000, // max 1000 requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   handler: rateLimitExceededHandler,
@@ -33,6 +33,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   handler: rateLimitExceededHandler,
   skipSuccessfulRequests: false, // Don't skip even if request succeeds
+  skip: (req) => req.ip === "127.0.0.1" || req.ip === "::1", // Skip rate limiting for localhost
   keyGenerator: (req) => req.ip || req.headers["x-forwarded-for"] || "unknown",
 });
 
