@@ -1,0 +1,41 @@
+# Render.com deployment configuration
+# Visit: https://render.com to deploy
+
+services:
+  # Backend API
+  - type: web
+    name: filevault-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile.prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: DATABASE_URL
+        fromDatabase:
+          name: filevault-db
+          property: connectionString
+      # Add your R2 and email credentials in Render dashboard
+    healthCheckPath: /health
+    
+  # Frontend Static Site
+  - type: web
+    name: filevault-frontend
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://filevault-backend.onrender.com
+
+databases:
+  # PostgreSQL Database
+  - name: filevault-db
+    databaseName: filevault
+    user: filevault
+    plan: free
