@@ -43,7 +43,8 @@ const AuthService = {
       );
 
       const user = result.rows[0];
-      // Send verification email
+
+      // Send verification email (required in production)
       await AuthService.sendVerificationEmail(email, name, verificationToken);
 
       return {
@@ -64,9 +65,16 @@ const AuthService = {
   // Send verification email
   sendVerificationEmail: async (email, name, token) => {
     try {
-      const baseUrl =
-        process.env.FRONTEND_URL || "http://localhost:3000/api/v1/auth";
-      const verificationLink = `${baseUrl}/verify-email?token=${token}`;
+      logger.info(`📧 Starting email send process for ${email}`);
+      logger.info(`📧 Email config - Host: ${process.env.EMAIL_HOST}, Port: ${process.env.EMAIL_PORT}`);
+      logger.info(`📧 Email user: ${process.env.EMAIL_USER}`);
+      logger.info(`📧 Email password length: ${process.env.EMAIL_PASS?.length || 0}`);
+
+      // Use backend URL for API endpoint, not frontend URL
+      const backendUrl = process.env.BACKEND_URL || "http://localhost:3000";
+      const verificationLink = `${backendUrl}/api/v1/auth/verify-email?token=${token}`;
+
+      logger.info(`📧 Verification link: ${verificationLink}`);
 
       const mailOptions = {
         from: process.env.EMAIL_FROM || '"FileVault" <no-reply@filevault.com>',
@@ -97,13 +105,22 @@ const AuthService = {
             </div>
           `,
       };
+
+      logger.info(`📧 Mail options prepared. Attempting to send...`);
+      logger.info(`📧 Transporter config: ${JSON.stringify({
+        host: transporter.options.host,
+        port: transporter.options.port,
+        secure: transporter.options.secure,
+        user: transporter.options.auth?.user
+      })}`);
+
       await transporter.sendMail(mailOptions);
-      logger.info(`✔️ Verification email sent to ${email}`);
+      logger.info(`✔️ Verification email sent successfully to ${email}`);
       return { success: true, message: "Verification email sent" };
     } catch (error) {
-      logger.error(
-        `❌ Error in AuthService.sendVerificationEmail: ${error.message}`
-      );
+      logger.error(`❌ Error in AuthService.sendVerificationEmail: ${error.message}`);
+      logger.error(`❌ Error stack: ${error.stack}`);
+      logger.error(`❌ Error code: ${error.code}`);
       throw new Error("Error sending verification email", error.message);
     }
   },
@@ -145,10 +162,10 @@ const AuthService = {
 
       // Generate JWT token
       const jwtSecret = process.env.JWT_SECRET;
-     
+
       const token = jwt.sign({ id: user.id, email: user.email }, jwtSecret, {
         expiresIn: "24h",
-        algorithm : "HS256",
+        algorithm: "HS256",
       });
 
       return {

@@ -1,4 +1,4 @@
-const { s3Client } = require("../config/R2");
+const { s3Client, storageConfig } = require("../config/R2");
 const { PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { pool, query } = require("../config/db");
@@ -7,6 +7,10 @@ const multer = require("multer");
 const FileService = require("../services/file.service");
 const logger = require("../utils/logger");
 const { FILE_SIZE_LIMIT } = require("../middlewares/validation.middleware");
+const LocalStorageService = require("../services/localStorage.service");
+
+// Initialize local storage service if not using R2
+const localStorage = storageConfig.type === 'LOCAL' ? new LocalStorageService(storageConfig.uploadDir) : null;
 
 // Use crypto instead of nanoid
 function generateId(length) {
@@ -64,26 +68,33 @@ exports.uploadFile = async (req, res) => {
 
     const fileId = generateId(10);
     const secretKey = generateSecretKey();
-    const fileName = `${fileId}-${file.originalname}`;
-    const bucket = process.env.R2_BUCKET_NAME;
-   
+    const fileName = `anonymous/${fileId}-${file.originalname}`;
 
-    // Upload file to S3 using AWS SDK v3
-    const params = {
-      Bucket: bucket,
-      Key: fileName,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    };
+    let fileUrl;
 
-    // Upload using AWS SDK v3
-    const command = new PutObjectCommand(params);
-    await s3Client.send(command);
+    // Upload file based on storage type
+    if (storageConfig.type === 'LOCAL') {
+      // Use local storage
+      await localStorage.uploadFile(file, fileName);
+      fileUrl = localStorage.getFileUrl(fileName);
+      console.log(`✅ Anonymous file uploaded to local storage: ${fileName}`);
+    } else {
+      // Upload file to R2/S3
+      const bucket = process.env.R2_BUCKET_NAME;
+      const params = {
+        Bucket: bucket,
+        Key: fileName,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      };
 
-    // Generate the file URL
-    const fileUrl = `${process.env.R2_ENDPOINT}/${fileName}`;
+      const command = new PutObjectCommand(params);
+      await s3Client.send(command);
+      fileUrl = `${process.env.R2_ENDPOINT}/${fileName}`;
+      console.log(`✅ Anonymous file uploaded to R2: ${fileName}`);
+    }
 
-    // Save metadata to database - fixed the SQL typo (INFO -> INTO)
+    // Save metadata to database
     await pool.query(
       `
         INSERT INTO files(filename, s3_key, secret_key, file_id, file_url)
@@ -91,6 +102,7 @@ exports.uploadFile = async (req, res) => {
       `,
       [file.originalname, fileName, secretKey, fileId, fileUrl]
     );
+
     const result = {
       file_id: fileId,
       secret_key: secretKey,

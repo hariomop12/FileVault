@@ -12,15 +12,40 @@ const poolConfig = {
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   database: process.env.DB_DATABASE,
-  ssl: {
-    rejectUnauthorized: true,
-    ca: fs.readFileSync(path.join(__dirname, "ca-aiven.pem")).toString()
-  },
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 20000,
   max: 20
 };
-    
+
+// SSL Configuration for cloud databases (Aiven, etc.)
+const isAivenOrCloudDB = process.env.DB_HOST?.includes('aiven') ||
+  process.env.DB_HOST?.includes('cloud') ||
+  process.env.DATABASE_URL?.includes('sslmode=require');
+
+const caPath = path.join(__dirname, "ca-aiven.pem");
+
+if (isAivenOrCloudDB) {
+  // Cloud database detected - use SSL
+  if (fs.existsSync(caPath)) {
+    // Use CA certificate if available
+    poolConfig.ssl = {
+      rejectUnauthorized: true,
+      ca: fs.readFileSync(caPath).toString()
+    };
+    console.log("✅ Using SSL connection with CA certificate (Aiven)");
+  } else {
+    // Use SSL without CA certificate (Aiven works with this)
+    poolConfig.ssl = {
+      rejectUnauthorized: false
+    };
+    console.log("✅ Using SSL connection without CA certificate (Aiven)");
+  }
+} else {
+  // Local development - no SSL needed
+  poolConfig.ssl = false;
+  console.log("ℹ️  Using non-SSL connection (local development)");
+}
+
 const pool = new Pool(poolConfig);
 
 // 📊 Monitor Database Queries (for Development)

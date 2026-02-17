@@ -19,11 +19,15 @@ async function startServer() {
     console.log('Checking database connection...');
     await checkDatabaseConnection();
   }
-  
+
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 FileVault server running on port ${PORT} - Hot reload test successful!`);
   });
+
+  // Increase header size limit to prevent 431 errors
+  server.maxHeadersCount = 0; // No limit on header count
+  server.headersTimeout = 60000; // 60 seconds timeout
 }
 
 // Initialize the server

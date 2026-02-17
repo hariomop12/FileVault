@@ -21,6 +21,9 @@
     "docs/"
   ],
   "delay": 1000,
+  "nodeArgs": [
+    "--max-http-header-size=65536"
+  ],
   "env": {
     "NODE_ENV": "development"
   },

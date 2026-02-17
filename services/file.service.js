@@ -9,6 +9,10 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { pool, query } = require("../config/db");
 const crypto = require("crypto");
 const logger = require("../utils/logger");
+const LocalStorageService = require("./localStorage.service");
+
+// Initialize local storage service if not using R2
+const localStorage = storageConfig.type === 'LOCAL' ? new LocalStorageService(storageConfig.uploadDir) : null;
 
 const FileService = {
   // Get all files for a user
@@ -36,14 +40,22 @@ const FileService = {
       const filesWithUrls = await Promise.all(
         result.rows.map(async (file) => {
           try {
-            const command = new GetObjectCommand({
-              Bucket: storageConfig.bucketName,
-              Key: file.s3_key,
-            });
+            let url;
 
-            const url = await getSignedUrl(s3Client, command, {
-              expiresIn: 3600,
-            });
+            if (storageConfig.type === 'LOCAL') {
+              // For local storage, generate a simple URL
+              url = localStorage.getFileUrl(file.s3_key);
+            } else {
+              // For R2, generate presigned URL
+              const command = new GetObjectCommand({
+                Bucket: storageConfig.bucketName,
+                Key: file.s3_key,
+              });
+
+              url = await getSignedUrl(s3Client, command, {
+                expiresIn: 3600,
+              });
+            }
 
             return {
               id: file.id,
@@ -112,23 +124,23 @@ const FileService = {
          WHERE id = $1 AND (user_id = $2 OR is_public = true)`,
         [fileId, userId]
       );
-  
+
       if (result.rows.length === 0) {
         return { error: "File not found or you don't have permission" };
       }
-  
+
       const fileData = result.rows[0];
-  
+
       // Generate signed URL
       const command = new GetObjectCommand({
         Bucket: storageConfig.bucketName,
-        Key: fileData.s3_key 
+        Key: fileData.s3_key
       });
-  
+
       const signedUrl = await getSignedUrl(s3Client, command, {
         expiresIn: 3600,
       });
-  
+
       return {
         file_id: fileData.id,
         file_name: fileData.filename,
@@ -361,15 +373,23 @@ const FileService = {
       const secretKey = crypto.randomBytes(16).toString("hex");
       const s3Key = `user-${userId}/${fileId}-${file.originalname}`;
 
-      // Upload file to R2/S3
-      const params = {
-        Bucket: storageConfig.bucketName,
-        Key: s3Key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      };
+      // Upload file based on storage type
+      if (storageConfig.type === 'LOCAL') {
+        // Use local storage
+        await localStorage.uploadFile(file, s3Key);
+        console.log(`✅ File uploaded to local storage: ${s3Key}`);
+      } else {
+        // Upload file to R2/S3
+        const params = {
+          Bucket: storageConfig.bucketName,
+          Key: s3Key,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        };
 
-      await s3Client.send(new PutObjectCommand(params));
+        await s3Client.send(new PutObjectCommand(params));
+        console.log(`✅ File uploaded to R2: ${s3Key}`);
+      }
 
       // Save to database
       const result = await query(
@@ -386,7 +406,7 @@ const FileService = {
         file_type: file.mimetype,
       };
     } catch (error) {
-      logger.error(`❌ Error uploading user file: ${error.message}`);
+      logger.error(`❌ Error uploading user file: ${error.message}`, { stack: error.stack });
       throw new Error("Failed to upload file");
     }
   },
