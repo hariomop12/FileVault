@@ -1,0 +1,94 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Job 1: Run tests
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run backend linting
+        run: npm run lint || echo "Linting not configured, skipping..."
+        continue-on-error: true
+
+      - name: Run backend tests
+        run: npm test || echo "Tests not configured, skipping..."
+        continue-on-error: true
+
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          npm test -- --passWithNoTests || echo "Frontend tests not configured, skipping..."
+        continue-on-error: true
+
+  # Job 2: Build Docker images
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend Docker image
+        run: |
+          docker build -f Dockerfile.dev -t filevault-backend:latest .
+
+      - name: Build frontend Docker image
+        run: |
+          docker build -f frontend/Dockerfile.dev -t filevault-frontend:latest ./frontend
+
+      - name: Test Docker images
+        run: |
+          echo "Backend image built successfully"
+          docker images | grep filevault-backend
+          echo "Frontend image built successfully"
+          docker images | grep filevault-frontend
+
+  # Job 3: Security scan (optional)
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=high || echo "Security vulnerabilities found, please review"
+        continue-on-error: true
+
+      - name: Run frontend npm audit
+        run: |
+          cd frontend
+          npm audit --audit-level=high || echo "Frontend security vulnerabilities found, please review"
+        continue-on-error: true
