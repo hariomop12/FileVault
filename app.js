@@ -68,7 +68,7 @@ app.get("/", (req, res) => {
  *                   description: Server uptime in seconds
  */
 app.get("/health", (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     status: "UP",
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
@@ -89,10 +89,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   }
 }));
 
-// Routes
-app.use("/api/v1/auth", authLimiter, authRoutes);
-app.use("/api/v1/files", fileRoutes);
-app.use("/api/v1", userFileRoutes);
+// Routes - Order matters! Auth routes must come before authenticated routes
+app.use("/api/v1/files", fileRoutes);  // Anonymous file routes (no auth)
+app.use("/api/v1/auth", authLimiter, authRoutes);  // Auth routes (signup, login, etc.)
+app.use("/api/v1", userFileRoutes);  // Authenticated user routes (requires auth)
 
 // Error handling middleware
 app.use((err, req, res, next) => {
