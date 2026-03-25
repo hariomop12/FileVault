@@ -2,12 +2,9 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Install system dependencies including postgresql-client for migrations
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    python3 \
     curl \
-    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy package files first for better caching
