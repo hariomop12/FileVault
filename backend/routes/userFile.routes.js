@@ -205,10 +205,10 @@ router.get("/files/count", UserFileController.getFileCount);
  *         description: Rate limit exceeded
  */
 router.get(
-    "/files/:id", 
-    createEndpointLimiter(20, 1),  // 20 requests per minute
-    UserFileController.getFileMetadata
-  );
+  "/files/:id(\\d+)",
+  createEndpointLimiter(20, 1),
+  UserFileController.getFileMetadata,
+);
 
 /**
  * @swagger
@@ -252,8 +252,7 @@ router.get(
  *       404:
  *         description: File not found
  */
-router.get("/download/:id", UserFileController.getDownloadLink);
-
+router.get("/download/:id(\\d+)", UserFileController.getDownloadLink);
 /**
  * @swagger
  * /api/v1/files/{id}:
@@ -291,8 +290,7 @@ router.get("/download/:id", UserFileController.getDownloadLink);
  *       404:
  *         description: File not found
  */
-router.delete("/files/:id", UserFileController.deleteFile);
-
+router.delete("/files/:id(\\d+)", UserFileController.deleteFile);
 /**
  * @swagger
  * /api/v1/files/{id}/share:
@@ -357,8 +355,7 @@ router.delete("/files/:id", UserFileController.deleteFile);
  *       404:
  *         description: File not found
  */
-router.post("/files/:id/share", UserFileController.createShareableLink);
-
+router.post("/files/:id(\\d+)/share", UserFileController.createShareableLink);
 /**
  * @swagger
  * /api/v1/storage:

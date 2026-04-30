@@ -301,7 +301,7 @@ const Files: React.FC = () => {
 
       {/* Header */}
       <div className="px-6 py-8 sm:px-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 mb-8 sm:flex-row sm:items-center">
           <div>
             <h1 className={`text-3xl font-bold transition-colors duration-300 ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -328,7 +328,7 @@ const Files: React.FC = () => {
                 >
                   {uploading ? (
                     <>
-                      <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -336,7 +336,7 @@ const Files: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
                       Upload File
@@ -346,8 +346,8 @@ const Files: React.FC = () => {
                 
                 {/* Progress Bar */}
                 {uploading && (
-                  <div className="mt-2 w-48">
-                    <div className="flex justify-between text-xs mb-1">
+                  <div className="w-48 mt-2">
+                    <div className="flex justify-between mb-1 text-xs">
                       <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
                         Progress
                       </span>
@@ -359,7 +359,7 @@ const Files: React.FC = () => {
                       theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
                     }`}>
                       <div
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
+                        className="h-2 transition-all duration-300 rounded-full bg-gradient-to-r from-blue-500 to-blue-600"
                         style={{ width: `${uploadProgress}%` }}
                       ></div>
                     </div>
@@ -405,7 +405,7 @@ const Files: React.FC = () => {
                 📊 Your Storage Overview
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2 lg:grid-cols-4">
                 {/* Storage Usage */}
                 <div className={`rounded-lg p-4 transition-all duration-300 ${
                   theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'
@@ -431,13 +431,13 @@ const Files: React.FC = () => {
                   <div className="text-sm text-gray-500">
                     of {stats.overview.storage_limit_mb} MB free
                   </div>
-                  <div className="mt-2 bg-gray-200 rounded-full h-2">
+                  <div className="h-2 mt-2 bg-gray-200 rounded-full">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="h-2 transition-all duration-300 bg-blue-600 rounded-full"
                       style={{ width: `${Math.min(stats.overview.percentage_used, 100)}%` }}
                     ></div>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="mt-1 text-xs text-gray-500">
                     {stats.overview.percentage_used.toFixed(1)}% used
                   </div>
                 </div>
@@ -529,7 +529,7 @@ const Files: React.FC = () => {
                   }`}>
                     📁 File Types
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {stats.file_types.map((fileType, index) => (
                       <div key={index} className={`rounded-lg p-4 transition-all duration-300 ${
                         theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'
@@ -561,7 +561,7 @@ const Files: React.FC = () => {
         ) : null}
 
         {/* Search and Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 mb-6 sm:flex-row sm:items-center">
           <div className="relative flex-1 max-w-md">
             <svg className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
               theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
@@ -591,11 +591,11 @@ const Files: React.FC = () => {
               }`}
             >
               {viewMode === 'grid' ? (
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                 </svg>
               ) : (
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
                 </svg>
               )}
@@ -674,9 +674,9 @@ const Files: React.FC = () => {
               >
                 {/* File Icon and Info */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center min-w-0 flex-1 mr-2">
-                    <span className="text-3xl mr-3 flex-shrink-0">{getFileIcon(file.file_type)}</span>
-                    <div className="min-w-0 flex-1">
+                  <div className="flex items-center flex-1 min-w-0 mr-2">
+                    <span className="flex-shrink-0 mr-3 text-3xl">{getFileIcon(file.file_type)}</span>
+                    <div className="flex-1 min-w-0">
                       <h3 className={`font-medium text-sm leading-tight transition-colors duration-300 ${
                         theme === 'dark' ? 'text-white' : 'text-gray-900'
                       }`} title={file.filename}>
@@ -708,7 +708,7 @@ const Files: React.FC = () => {
                 </p>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="flex gap-2 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -740,7 +740,7 @@ const Files: React.FC = () => {
                       e.stopPropagation();
                       handleDeleteFile(file.id);
                     }}
-                    className="py-2 px-3 text-xs rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all duration-300"
+                    className="px-3 py-2 text-xs text-white transition-all duration-300 bg-red-600 rounded-lg hover:bg-red-700"
                   >
                     Delete
                   </button>

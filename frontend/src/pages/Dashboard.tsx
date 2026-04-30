@@ -64,7 +64,7 @@ const Dashboard: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/v1/upload', {
+      const response = await fetch('/api/v1/files/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -163,7 +163,7 @@ const Dashboard: React.FC = () => {
       
       {/* Header Section */}
       <div className="px-6 py-8 sm:px-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className={`text-3xl font-bold transition-colors duration-300 ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -180,7 +180,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Total Files Card */}
           <div className={`relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:scale-105 ${
             theme === 'dark'
@@ -329,7 +329,7 @@ const Dashboard: React.FC = () => {
 
               {/* Storage Progress Bar */}
               <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center justify-between mb-2">
                   <span className={`text-sm font-medium transition-colors duration-300 ${
                     theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
                   }`}>
@@ -341,13 +341,13 @@ const Dashboard: React.FC = () => {
                     {stats.overview.storage_used_mb} MB / {stats.overview.storage_limit_mb} MB
                   </span>
                 </div>
-                <div className="bg-gray-200 rounded-full h-3">
+                <div className="h-3 bg-gray-200 rounded-full">
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+                    className="h-3 transition-all duration-500 rounded-full bg-gradient-to-r from-blue-500 to-blue-600"
                     style={{ width: `${Math.min(stats.overview.percentage_used, 100)}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between items-center mt-2">
+                <div className="flex items-center justify-between mt-2">
                   <span className={`text-xs transition-colors duration-300 ${
                     theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
                   }`}>
@@ -369,7 +369,7 @@ const Dashboard: React.FC = () => {
                   }`}>
                     📁 File Types
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {stats.file_types.map((fileType, index) => (
                       <div key={index} className={`rounded-lg p-4 transition-all duration-300 ${
                         theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'
@@ -391,7 +391,7 @@ const Dashboard: React.FC = () => {
                         }`}>
                           {fileType.size_mb} MB
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="mt-1 text-xs text-gray-500">
                           {((fileType.size / stats.overview.total_storage_used) * 100).toFixed(1)}% of total
                         </div>
                       </div>
@@ -411,7 +411,7 @@ const Dashboard: React.FC = () => {
               : 'bg-green-50 border-green-200 text-green-700'
           }`}>
             <div className="flex items-center">
-              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
@@ -424,7 +424,7 @@ const Dashboard: React.FC = () => {
                 onClick={() => setUploadResult(null)}
                 className="ml-auto text-current hover:opacity-70"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -458,7 +458,7 @@ const Dashboard: React.FC = () => {
                 >
                   {isUploading ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 mr-3 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -466,7 +466,7 @@ const Dashboard: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                      <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                       </svg>
                       Upload New File
@@ -477,7 +477,7 @@ const Dashboard: React.FC = () => {
                 {/* Progress Bar */}
                 {isUploading && (
                   <div className="mt-3">
-                    <div className="flex justify-between text-xs mb-1">
+                    <div className="flex justify-between mb-1 text-xs">
                       <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
                         Upload Progress
                       </span>
@@ -489,7 +489,7 @@ const Dashboard: React.FC = () => {
                       theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
                     }`}>
                       <div
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
+                        className="h-2 transition-all duration-300 rounded-full bg-gradient-to-r from-blue-500 to-blue-600"
                         style={{ width: `${uploadProgress}%` }}
                       ></div>
                     </div>
@@ -504,7 +504,7 @@ const Dashboard: React.FC = () => {
                     : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
                 }`}
               >
-                <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
                 </svg>
                 Browse Files
@@ -517,7 +517,7 @@ const Dashboard: React.FC = () => {
                     : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
                 }`}
               >
-                <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m0 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
                 </svg>
                 Settings
@@ -540,11 +540,11 @@ const Dashboard: React.FC = () => {
               <div className={`text-center py-8 transition-colors duration-300 ${
                 theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}>
-                <svg className="mx-auto h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <svg className="w-12 h-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                 </svg>
                 <p className="text-sm">No recent activity</p>
-                <p className="text-xs mt-1">Upload your first file to get started!</p>
+                <p className="mt-1 text-xs">Upload your first file to get started!</p>
               </div>
             </div>
           </div>
