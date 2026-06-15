@@ -2,38 +2,6 @@ const logger = require("../utils/logger");
 
 // Configure for file validation
 const FILE_SIZE_LIMIT = 5000 * 1024 * 1024; // 5GB
-const ALLOWED_FILE_TYPES = {
-  // Images
-  "image/jpeg": ".jpg",
-  "image/png": ".png",
-  "image/gif": ".gif",
-  "image/webp": ".webp",
-
-  // Documents
-  "application/pdf": ".pdf",
-  "application/msword": ".doc",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-    ".docx",
-  "application/vnd.ms-excel": ".xls",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
-  "application/vnd.ms-powerpoint": ".ppt",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-    ".pptx",
-
-  // Archives
-  "application/zip": ".zip",
-  "application/x-rar-compressed": ".rar",
-  "application/x-7z-compressed": ".7z",
-
-  // Text
-  "text/plain": ".txt",
-  "text/csv": ".csv",
-  "text/html": ".html",
-
-  // Media
-  "audio/mpeg": ".mp3",
-  "video/mp4": ".mp4",
-};
 
 /**
  * * Middleware to validate file upload
@@ -67,28 +35,6 @@ const validateFileUpload = (req, res, next) => {
       });
     }
 
-    // 2. Validate file type
-    if (!ALLOWED_FILE_TYPES[fileType]) {
-      logger.warn(`Invalid File Type: ${fileName} (${fileType})`);
-      return res.status(400).json({
-        success: false,
-        message: `Invalid file type. Allowed types are: ${Object.keys(
-          ALLOWED_FILE_TYPES
-        ).join(", ")}`,
-      });
-    }
-
-    // 3. Validate file extension matches content type
-    const fileExtension = "." + fileName.split(".").pop().toLowerCase();
-    const expectedExtension = ALLOWED_FILE_TYPES[fileType];
-
-    if (fileExtension !== expectedExtension) {
-      logger.warn(`File extension mismatch: ${fileName} (${fileType})`);
-      return res.status(400).json({
-        success: false,
-        message: `File extension doesn't match content type. Expected: ${expectedExtension}`,
-      });
-    }
     logger.info(`File validation passed: ${fileName}`);
     next();
   } catch (error) {
@@ -100,4 +46,4 @@ const validateFileUpload = (req, res, next) => {
   }
 };
 
-module.exports = { validateFileUpload, ALLOWED_FILE_TYPES, FILE_SIZE_LIMIT };
+module.exports = { validateFileUpload, FILE_SIZE_LIMIT };

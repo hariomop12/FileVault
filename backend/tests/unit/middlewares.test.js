@@ -100,7 +100,7 @@ describe('Validation Middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('should reject invalid file types', () => {
+  it('should accept any file type', () => {
     req.file = {
       size: 1024,
       mimetype: 'application/x-sh',
@@ -109,11 +109,10 @@ describe('Validation Middleware', () => {
 
     validateFileUpload(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
   });
 
-  it('should reject extension mismatch', () => {
+  it('should accept any extension', () => {
     req.file = {
       size: 1024,
       mimetype: 'application/pdf',
@@ -122,8 +121,7 @@ describe('Validation Middleware', () => {
 
     validateFileUpload(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
   });
 
   it('should pass valid file', () => {
