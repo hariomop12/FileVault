@@ -17,9 +17,10 @@ const poolConfig = {
     port: process.env.DB_PORT,
     database: process.env.DB_DATABASE,
   }),
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 20000,
-  max: 20
+  connectionTimeoutMillis: 30000,
+  idleTimeoutMillis: 60000,
+  max: 20,
+  keepAlive: true
 };
 
 // SSL Configuration for cloud databases (Aiven, etc.)
