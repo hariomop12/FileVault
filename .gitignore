@@ -192,6 +192,9 @@ coverage/
 # yarn.lock
 # npm-lock.yaml
 
+# Local uploads
+uploads/
+
 # Local database backups
 *.backup
 *.bak

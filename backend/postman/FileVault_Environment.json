@@ -1,35 +1,81 @@
 {
-  "id": "filevault-environment",
   "name": "FileVault Development",
   "values": [
     {
       "key": "base_url",
       "value": "http://localhost:3000",
       "description": "Base URL for the FileVault API",
+      "type": "default",
       "enabled": true
     },
     {
       "key": "auth_token",
       "value": "",
-      "description": "JWT authentication token (auto-populated after login)",
+      "description": "JWT authentication token (auto-set after login)",
+      "type": "secret",
       "enabled": true
     },
     {
       "key": "user_file_id",
       "value": "",
-      "description": "File ID for authenticated user files (auto-populated)",
+      "description": "File ID for authenticated operations (auto-set after upload)",
+      "type": "default",
       "enabled": true
     },
     {
       "key": "anonymous_file_id",
       "value": "",
-      "description": "File ID for anonymous uploads (auto-populated)",
+      "description": "Anonymous file ID (auto-set after anonymous upload)",
+      "type": "default",
       "enabled": true
     },
     {
       "key": "anonymous_secret_key",
       "value": "",
-      "description": "Secret key for anonymous file downloads (auto-populated)",
+      "description": "Secret key for anonymous downloads (auto-set after upload)",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "verification_token",
+      "value": "",
+      "description": "Email verification token (returned in dev mode after signup)",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "reset_token",
+      "value": "",
+      "description": "Password reset token (returned in dev mode)",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "share_access_token",
+      "value": "",
+      "description": "Access token for shared file link (auto-set)",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "user_email",
+      "value": "john.doe@example.com",
+      "description": "Test user email for auth flows",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "user_password",
+      "value": "securePassword123",
+      "description": "Test user password for auth flows",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "user_name",
+      "value": "John Doe",
+      "description": "Test user name for registration",
+      "type": "default",
       "enabled": true
     }
   ],

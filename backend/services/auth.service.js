@@ -5,16 +5,22 @@ const logger = require("../utils/logger");
 const { pool, query } = require("../config/db");
 const nodemailer = require("nodemailer");
 
-// Nodemailer Transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.EMAIL_PORT || "587"),
-  secure: process.env.EMAIL_SECURE === "true",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Lazy nodemailer transporter (created on first use)
+let _transporter = null;
+const getTransporter = () => {
+  if (!_transporter) {
+    _transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || "smtp.gmail.com",
+      port: parseInt(process.env.EMAIL_PORT || "587"),
+      secure: process.env.EMAIL_SECURE === "true",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  }
+  return _transporter;
+};
 
 const AuthService = {
   // Register a new user
@@ -44,8 +50,10 @@ const AuthService = {
 
       const user = result.rows[0];
 
-      // Send verification email (required in production)
-      await AuthService.sendVerificationEmail(email, name, verificationToken);
+      // Send verification email (non-blocking — doesn't fail registration)
+      AuthService.sendVerificationEmail(email, name, verificationToken).catch((err) => {
+        logger.warn(`Email sending failed (non-blocking): ${err.message}`);
+      });
 
       return {
         success: "User registered successfully",
@@ -107,14 +115,15 @@ const AuthService = {
       };
 
       logger.info(`📧 Mail options prepared. Attempting to send...`);
+      const t = getTransporter();
       logger.info(`📧 Transporter config: ${JSON.stringify({
-        host: transporter.options.host,
-        port: transporter.options.port,
-        secure: transporter.options.secure,
-        user: transporter.options.auth?.user
+        host: t.options.host,
+        port: t.options.port,
+        secure: t.options.secure,
+        user: t.options.auth?.user
       })}`);
 
-      await transporter.sendMail(mailOptions);
+      await t.sendMail(mailOptions);
       logger.info(`✔️ Verification email sent successfully to ${email}`);
       return { success: true, message: "Verification email sent" };
     } catch (error) {
@@ -233,12 +242,14 @@ const AuthService = {
         [resetToken, email]
       );
 
-      // Send password reset email
-      await AuthService.sendPasswordResetEmail(
+      // Send password reset email (non-blocking)
+      AuthService.sendPasswordResetEmail(
         user.email,
         user.name,
         resetToken
-      );
+      ).catch((err) => {
+        logger.warn(`Password reset email failed (non-blocking): ${err.message}`);
+      });
       return { success: "Password reset email sent" };
     } catch (error) {
       logger.error(`❌ Error in AuthService.forgotPassword: ${error.message}`);
@@ -278,7 +289,7 @@ const AuthService = {
           </div>
             `,
       };
-      await transporter.sendMail(mailOptions);
+      await getTransporter().sendMail(mailOptions);
       logger.info(`✔️ Password reset email sent to ${email}`);
       return { success: true, message: "Password reset email sent" };
     } catch (error) {
@@ -347,12 +358,14 @@ const AuthService = {
         [verificationToken, email]
       );
 
-      // Send verification email
-      await AuthService.sendVerificationEmail(
+      // Send verification email (non-blocking)
+      AuthService.sendVerificationEmail(
         user.email,
         user.name,
         verificationToken
-      );
+      ).catch((err) => {
+        logger.warn(`Resend verification email failed (non-blocking): ${err.message}`);
+      });
       return {
         success: "Verification email sent",
         varificationToken: verificationToken,

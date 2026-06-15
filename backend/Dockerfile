@@ -7,11 +7,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files first for better caching
-COPY package*.json ./
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Copy package files for better caching
+COPY package.json pnpm-lock.yaml ./
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -35,4 +38,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:$PORT/health || exit 1
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

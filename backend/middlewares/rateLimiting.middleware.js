@@ -33,7 +33,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   handler: rateLimitExceededHandler,
   skipSuccessfulRequests: false, // Don't skip even if request succeeds
-  skip: (req) => req.ip === "127.0.0.1" || req.ip === "::1", // Skip rate limiting for localhost
+  skip: (req) => req.ip === "127.0.0.1" || req.ip === "::1" || process.env.NODE_ENV === "test", // Skip rate limiting for localhost and tests
   keyGenerator: (req) => req.ip || req.headers["x-forwarded-for"] || "unknown",
 });
 

@@ -8,7 +8,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=${PORT:-3000}
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-filevault-dev-jwt-secret-change-in-production}
       - DATABASE_URL=${DATABASE_URL}
       - EMAIL_HOST=${EMAIL_HOST}
       - EMAIL_PORT=${EMAIL_PORT}
@@ -16,11 +16,6 @@ services:
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
       - EMAIL_FROM=${EMAIL_FROM}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_DATABASE=${DB_DATABASE}
     env_file:
       - .env
     restart: unless-stopped
@@ -29,7 +24,7 @@ services:
     networks:
       - filevault-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -41,16 +36,12 @@ services:
     ports:
       - "3001:80"
     environment:
-      - REACT_APP_API_URL=http://localhost:3001
+      - REACT_APP_API_URL=http://localhost:3000
     restart: unless-stopped
     depends_on:
       - backend
     networks:
       - filevault-network
-
-volumes:
-  app_logs:
-
 
 networks:
   filevault-network:

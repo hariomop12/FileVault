@@ -19,13 +19,20 @@
     "swagger:watch": "node swagger-watch.js",
     "docs": "npm run swagger:generate && echo 'Swagger docs generated! Visit http://localhost:3000/api-docs'",
     "dev:auto-docs": "concurrently \"npm run swagger:watch\" \"npm run dev\" --names \"SWAGGER,SERVER\" --prefix-colors \"cyan,green\"",
-    "test": "echo \"Running tests...\" && find . -name '*.test.js' -not -path './node_modules/*' -not -path './frontend/*' | head -5 | xargs -I {} echo \"Found test file: {}\" || echo \"No test files found, but pipeline continues\"",
+    "test": "jest --verbose --forceExit --detectOpenHandles",
+    "test:coverage": "jest --verbose --forceExit --detectOpenHandles --coverage",
+    "test:watch": "jest --watch --verbose",
     "lint": "echo \"Linting JavaScript files...\" && find . -name '*.js' -not -path './node_modules/*' -not -path './frontend/*' | head -10 | xargs -I {} echo \"Checking: {}\" || echo \"Linting completed\""
   },
   "jest": {
     "testEnvironment": "node",
+    "setupFiles": ["./jest.setup.js"],
     "coveragePathIgnorePatterns": [
       "/node_modules/"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/frontend/"
     ],
     "testMatch": [
       "**/*.test.js"

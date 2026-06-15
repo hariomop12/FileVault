@@ -2,17 +2,20 @@ FROM node:18-slim AS build
 
 WORKDIR /app
 
+# Install pnpm globally
+RUN npm install -g pnpm
+
 # Copy package files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN npm ci
+RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 # Copy source code
 COPY . .
 
 # Build the React app
-RUN npm run build
+RUN pnpm run build
 
 # Production stage with nginx
 FROM nginx:alpine

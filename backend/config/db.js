@@ -1,47 +1,38 @@
-const fs = require("fs");
-const path = require("path");
 const { Pool } = require("pg");
 const pgMonitor = require("pg-monitor");
 
 const logger = require("../utils/logger");
 
-// Configuration for database connection
+// Parse DATABASE_URL — strip sslmode so pg doesn't apply its own SSL config
+const rawUrl = process.env.DATABASE_URL;
+const dbHost = rawUrl ? new URL(rawUrl).hostname : (process.env.DB_HOST || 'localhost');
+const connectionString = rawUrl ? (() => { const u = new URL(rawUrl); u.searchParams.delete('sslmode'); return u.toString(); })() : undefined;
+
 const poolConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_DATABASE,
+  connectionString,
+  ...(!connectionString && {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_DATABASE,
+  }),
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 20000,
   max: 20
 };
 
 // SSL Configuration for cloud databases (Aiven, etc.)
-const isAivenOrCloudDB = process.env.DB_HOST?.includes('aiven') ||
-  process.env.DB_HOST?.includes('cloud') ||
-  process.env.DATABASE_URL?.includes('sslmode=require');
-
-const caPath = path.join(__dirname, "ca-aiven.pem");
+const isAivenOrCloudDB = dbHost?.includes('aiven') ||
+  dbHost?.includes('cloud') ||
+  rawUrl?.includes('sslmode=require');
 
 if (isAivenOrCloudDB) {
-  // Cloud database detected - use SSL
-  if (fs.existsSync(caPath)) {
-    // Use CA certificate if available
-    poolConfig.ssl = {
-      rejectUnauthorized: true,
-      ca: fs.readFileSync(caPath).toString()
-    };
-    console.log("✅ Using SSL connection with CA certificate (Aiven)");
-  } else {
-    // Use SSL without CA certificate (Aiven works with this)
-    poolConfig.ssl = {
-      rejectUnauthorized: false
-    };
-    console.log("✅ Using SSL connection without CA certificate (Aiven)");
-  }
+  poolConfig.ssl = {
+    rejectUnauthorized: false
+  };
+  console.log("✅ Using SSL connection (Aiven/cloud)");
 } else {
-  // Local development - no SSL needed
   poolConfig.ssl = false;
   console.log("ℹ️  Using non-SSL connection (local development)");
 }

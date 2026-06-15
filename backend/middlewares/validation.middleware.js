@@ -69,7 +69,7 @@ const validateFileUpload = (req, res, next) => {
 
     // 2. Validate file type
     if (!ALLOWED_FILE_TYPES[fileType]) {
-      logger.worn(`Invalid File Type: ${fileName} (${fileType})`);
+      logger.warn(`Invalid File Type: ${fileName} (${fileType})`);
       return res.status(400).json({
         success: false,
         message: `Invalid file type. Allowed types are: ${Object.keys(

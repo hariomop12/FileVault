@@ -6,11 +6,9 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useTheme } from '../contexts/ThemeContext';
 import DarkModeToggle from '../components/ui/DarkModeToggle';
-
 import { authService } from '../services/auth';
 import { RegisterCredentials } from '../types';
 
-// Form validation schema
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
@@ -33,37 +31,20 @@ const Register: React.FC = () => {
   });
 
   const onSubmit = async (data: RegisterCredentials) => {
-    console.log('🚀 Starting registration process...');
-    console.log('📝 Form data:', data);
-
     setIsLoading(true);
     try {
-      console.log('📤 Calling authService.register...');
       const response = await authService.register(data);
-      console.log('✅ Raw response:', response);
-
       if (response.success) {
         toast.success('Registration successful! Please check your email to verify your account.');
-
-        // In development mode, show verification token for testing
         if ((response as any).verificationToken) {
-          console.log('🔗 Development mode - Verification token:', (response as any).verificationToken);
-          console.log('🔗 Verification URL:', `http://localhost:3000/api/v1/auth/verify-email?token=${(response as any).verificationToken}`);
           toast.success(`Dev mode: Check console for verification link!`, { duration: 10000 });
         }
-
-        // Show verification prompt instead of navigating immediately
         setRegisteredEmail(data.email);
         setShowVerificationPrompt(true);
       } else {
-        console.log('❌ Registration failed - no success in response');
         toast.error(response.message || 'Registration failed');
       }
     } catch (error: any) {
-      console.error('❌ Registration error:', error);
-      console.error('❌ Error details:', error.response?.data || error.message);
-
-      // Handle specific error cases
       const errorData = error.response?.data;
       if (errorData?.error === 'User already exists' || errorData?.message?.includes('already exists')) {
         toast.error('This email is already registered. Please login instead.');
@@ -76,182 +57,139 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${theme === 'dark'
-        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
-        : 'bg-gradient-to-br from-green-50 via-emerald-100 to-teal-50'
-      }`}>
-      {/* Dark Mode Toggle */}
+    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
+      theme === 'dark'
+        ? 'bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950'
+        : 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50'
+    }`}>
       <div className="absolute top-4 right-4 z-10">
         <DarkModeToggle />
       </div>
 
-      <div className={`max-w-md w-full space-y-8 relative z-0 p-8 rounded-2xl backdrop-blur-sm transition-all duration-300 ${theme === 'dark'
-          ? 'bg-slate-800/50 border border-slate-700/50 shadow-2xl shadow-purple-500/20'
-          : 'bg-white/80 border border-white/20 shadow-2xl shadow-emerald-500/20'
-        }`}>
+      <div className={`max-w-md w-full animate-fade-in space-y-8 relative z-0 p-8 rounded-2xl backdrop-blur-sm transition-all duration-300 ${
+        theme === 'dark'
+          ? 'bg-gray-900/80 border border-gray-800 shadow-2xl'
+          : 'bg-white/80 border border-gray-200 shadow-xl'
+      }`}>
         {showVerificationPrompt ? (
-          // Verification Prompt
-          <div className="text-center">
-            <div className="mb-6">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20">
-                <svg className="h-8 w-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
+          <div className="text-center animate-fade-in">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
             </div>
-
-            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}>
-              📧 Check Your Email
+            <h2 className={`text-2xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Check Your Email
             </h2>
-
-            <p className={`mb-6 transition-colors duration-300 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-              }`}>
-              We've sent a verification link to <strong>{registeredEmail}</strong>.
-              Please check your email and click the link to verify your account.
+            <p className={`mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              We've sent a verification link to <strong className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>{registeredEmail}</strong>.
             </p>
-
-            <div className={`mb-6 p-4 rounded-lg transition-all duration-300 ${theme === 'dark'
-                ? 'bg-blue-900/20 border border-blue-700/30 text-blue-300'
-                : 'bg-blue-50 border border-blue-200 text-blue-700'
-              }`}>
-              <p className="text-sm">
-                <strong>Development Mode:</strong> Check the browser console for the verification link if you're testing locally.
-              </p>
+            <div className={`mb-6 p-4 rounded-xl text-sm border ${
+              theme === 'dark' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-700'
+            }`}>
+              <strong>Development Mode:</strong> Check the browser console for the verification link.
             </div>
-
             <div className="space-y-3">
               <button
                 onClick={() => navigate('/login')}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 transform hover:scale-105 ${theme === 'dark'
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:ring-emerald-500 shadow-lg shadow-emerald-500/25'
-                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 focus:ring-blue-500 shadow-lg shadow-blue-500/25'
-                  }`}
+                className="w-full py-3 px-4 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-blue-500/20"
               >
                 Continue to Login
               </button>
-
               <button
                 onClick={() => setShowVerificationPrompt(false)}
-                className={`w-full flex justify-center py-2 px-4 text-sm font-medium rounded-lg transition-all duration-300 ${theme === 'dark'
-                    ? 'text-gray-300 hover:text-white hover:bg-slate-700/50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
+                className={`w-full py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+                  theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
               >
                 Back to Registration
               </button>
             </div>
           </div>
         ) : (
-          // Registration Form
           <>
-            <div>
-              <h2 className={`mt-6 text-center text-3xl font-extrabold transition-colors duration-300 ${theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
-                🎆 Create your FileVault account
+            <div className="text-center">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg mb-4">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                Create your account
               </h2>
-              <p className={`mt-2 text-center text-sm transition-colors duration-300 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                }`}>
-                Or{' '}
-                <Link
-                  to="/login"
-                  className={`font-medium transition-colors duration-300 ${theme === 'dark'
-                      ? 'text-emerald-400 hover:text-emerald-300'
-                      : 'text-blue-600 hover:text-blue-500'
-                    }`}
-                >
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                Or{" "}
+                <Link to="/login" className={`font-medium ${theme === 'dark' ? 'text-emerald-400 hover:text-emerald-300' : 'text-blue-600 hover:text-blue-500'}`}>
                   sign in to your existing account
                 </Link>
               </p>
             </div>
 
-            <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className={`block text-sm font-medium transition-colors duration-300 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                    }`}>
-                    👤 Full Name
-                  </label>
-                  <input
-                    {...register('name')}
-                    id="name"
-                    name="name"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    className={`mt-1 appearance-none relative block w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-300 ${theme === 'dark'
-                        ? 'border-slate-600 bg-slate-700/50 placeholder-gray-400 text-white focus:ring-emerald-500 focus:border-emerald-500'
-                        : 'border-gray-300 bg-white placeholder-gray-500 text-gray-900 focus:ring-blue-500 focus:border-blue-500'
-                      }`}
-                    placeholder="Enter your full name"
-                  />
-                  {errors.name && (
-                    <p className={`mt-1 text-sm transition-colors duration-300 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'
-                      }`}>{errors.name.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="email" className={`block text-sm font-medium transition-colors duration-300 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                    }`}>
-                    📧 Email address
-                  </label>
-                  <input
-                    {...register('email')}
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    className={`mt-1 appearance-none relative block w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-300 ${theme === 'dark'
-                        ? 'border-slate-600 bg-slate-700/50 placeholder-gray-400 text-white focus:ring-emerald-500 focus:border-emerald-500'
-                        : 'border-gray-300 bg-white placeholder-gray-500 text-gray-900 focus:ring-blue-500 focus:border-blue-500'
-                      }`}
-                    placeholder="Enter your email"
-                  />
-                  {errors.email && (
-                    <p className={`mt-1 text-sm transition-colors duration-300 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'
-                      }`}>{errors.email.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="password" className={`block text-sm font-medium transition-colors duration-300 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                    }`}>
-                    🔑 Password
-                  </label>
-                  <input
-                    {...register('password')}
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    className={`mt-1 appearance-none relative block w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-300 ${theme === 'dark'
-                        ? 'border-slate-600 bg-slate-700/50 placeholder-gray-400 text-white focus:ring-emerald-500 focus:border-emerald-500'
-                        : 'border-gray-300 bg-white placeholder-gray-500 text-gray-900 focus:ring-blue-500 focus:border-blue-500'
-                      }`}
-                    placeholder="Enter your password (min 8 characters)"
-                  />
-                  {errors.password && (
-                    <p className={`mt-1 text-sm transition-colors duration-300 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'
-                      }`}>{errors.password.message}</p>
-                  )}
-                </div>
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+              <div>
+                <label htmlFor="name" className={`block text-sm font-medium mb-1.5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Full Name
+                </label>
+                <input
+                  {...register('name')}
+                  id="name" name="name" type="text" autoComplete="name" required
+                  placeholder="John Doe"
+                  className={`w-full px-4 py-2.5 rounded-xl border input-focus ${
+                    theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+                  }`}
+                />
+                {errors.name && <p className={`mt-1 text-xs ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{errors.name.message}</p>}
               </div>
 
               <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 ${theme === 'dark'
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:ring-emerald-500 shadow-lg shadow-emerald-500/25'
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 focus:ring-blue-500 shadow-lg shadow-blue-500/25'
-                    }`}
-                >
-                  {isLoading ? 'Creating account...' : 'Create account'}
-                </button>
+                <label htmlFor="email" className={`block text-sm font-medium mb-1.5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Email address
+                </label>
+                <input
+                  {...register('email')}
+                  id="email" name="email" type="email" autoComplete="email" required
+                  placeholder="you@example.com"
+                  className={`w-full px-4 py-2.5 rounded-xl border input-focus ${
+                    theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+                  }`}
+                />
+                {errors.email && <p className={`mt-1 text-xs ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{errors.email.message}</p>}
               </div>
+
+              <div>
+                <label htmlFor="password" className={`block text-sm font-medium mb-1.5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Password
+                </label>
+                <input
+                  {...register('password')}
+                  id="password" name="password" type="password" autoComplete="new-password" required
+                  placeholder="Min 8 characters"
+                  className={`w-full px-4 py-2.5 rounded-xl border input-focus ${
+                    theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+                  }`}
+                />
+                {errors.password && <p className={`mt-1 text-xs ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{errors.password.message}</p>}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full py-3 px-4 text-sm font-semibold rounded-xl text-white transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 ${
+                  theme === 'dark'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/20'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/20'
+                }`}
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Creating account...
+                  </span>
+                ) : "Create account"}
+              </button>
             </form>
           </>
         )}

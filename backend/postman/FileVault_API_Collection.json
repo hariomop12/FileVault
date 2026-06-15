@@ -1,16 +1,27 @@
 {
   "info": {
-    "name": "FileVault API Collection",
-    "description": "Complete API collection for FileVault - Secure Cloud File Storage API\n\n## About FileVault\nFileVault is an enterprise-grade secure file storage solution with:\n- 🔒 JWT-based authentication with email verification\n- 📁 Secure file upload/download with AWS S3\n- 🛡️ Rate limiting and security middleware\n- 📊 Comprehensive logging and monitoring\n- 🔗 Shareable links with expiration controls\n\n## How to Use\n1. **Sign up** for a new account\n2. **Verify email** using the verification token\n3. **Login** to get your JWT token\n4. **Set the token** in the Authorization tab or use {{auth_token}} variable\n5. **Upload files** and manage your storage\n\n## Environment Variables\nSet these variables in Postman:\n- `base_url`: http://localhost:3000\n- `auth_token`: Your JWT token (set automatically after login)",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "12345678"
+    "name": "FileVault API",
+    "description": "## FileVault - Secure Cloud File Storage API\n\n**Tech Stack:** Node.js, Express, PostgreSQL, Cloudflare R2, JWT Auth\n\n### How to Use:\n1. **Sign Up** → auto-captures verification token (dev mode)\n2. **Verify Email** → paste token from signup response\n3. **Login** → auto-sets `auth_token` for all subsequent requests\n4. **Upload Files** → both anonymous & authenticated flows\n5. **Manage Files** → list, download, share, delete, view stats\n\n### Environment Variables Needed:\n- `base_url` — API base URL (default: `http://localhost:3000`)\n- `auth_token` — auto-populated after login\n- `user_email` / `user_password` — your test credentials\n\n> All authenticated endpoints require `auth_token` to be set in the environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "🏠 Health & Status",
+      "name": "Health & Status",
       "item": [
         {
           "name": "API Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has text', () => pm.expect(pm.response.text()).to.include('FileVault API is running'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -21,10 +32,33 @@
             },
             "description": "Check if the FileVault API is running"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"message\": \"FileVault API is running\"\n}"
+            }
+          ]
         },
         {
           "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is UP', () => pm.expect(pm.response.json().status).to.eql('UP'));",
+                  "pm.test('Has uptime', () => pm.expect(pm.response.json().uptime).to.be.a('number'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -33,28 +67,44 @@
               "host": ["{{base_url}}"],
               "path": ["health"]
             },
-            "description": "Comprehensive health check with uptime and status"
+            "description": "Health check with status, timestamp, and uptime"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"status\": \"UP\",\n  \"timestamp\": \"2025-01-15T10:30:00.000Z\",\n  \"uptime\": 1234.56\n}"
+            }
+          ]
         }
-      ]
+      ],
+      "description": "Basic health check endpoints to verify API is operational"
     },
     {
-      "name": "🔐 Authentication",
+      "name": "Authentication",
       "item": [
         {
-          "name": "Register User (Signup)",
+          "name": "Sign Up",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const response = pm.response.json();",
-                  "    if (response.token) {",
-                  "        pm.environment.set('auth_token', response.token);",
-                  "        console.log('Auth token saved:', response.token);",
-                  "    }",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.verificationToken) {",
+                  "    pm.environment.set('verification_token', jsonData.verificationToken);",
+                  "    console.log('Verification token saved:', jsonData.verificationToken);",
+                  "}",
+                  "",
+                  "if (jsonData.user && jsonData.user.email) {",
+                  "    pm.environment.set('user_email', jsonData.user.email);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -64,23 +114,73 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"securePassword123\"\n}"
+              "raw": "{\n  \"name\": \"{{user_name}}\",\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/signup",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "auth", "signup"]
             },
-            "description": "Register a new user account. Email verification required before login."
+            "description": "Register a new user. In dev mode, the response includes a `verificationToken` for testing."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success (Dev Mode)",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Registration successful! Please check your email to verify your account.\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\"\n  },\n  \"verificationToken\": \"eyJhbGciOiJIUzI1NiIs...\"\n}"
+            },
+            {
+              "name": "Email Already Registered",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Email already registered\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Message confirms verification', () => pm.expect(pm.response.json().message).to.include('verified'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/verify-email?token={{verification_token}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "verify-email"],
+              "query": [
+                { "key": "token", "value": "{{verification_token}}", "description": "Verification token from signup response" }
+              ]
+            },
+            "description": "Verify email address using the token returned in dev mode after signup.\n\n> **Note:** In production, this token is sent via email."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Email verified successfully! You can now log in.\"\n}"
+            }
+          ]
         },
         {
           "name": "Login",
@@ -89,12 +189,14 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    const response = pm.response.json();",
-                  "    if (response.token) {",
-                  "        pm.environment.set('auth_token', response.token);",
-                  "        console.log('Auth token saved:', response.token);",
-                  "    }",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Has token', () => pm.expect(pm.response.json().token).to.exist);",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.environment.set('auth_token', jsonData.token);",
+                  "    console.log('Auth token saved');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -104,120 +206,174 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"securePassword123\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "auth", "login"]
             },
-            "description": "Login with email and password. Returns JWT token for authenticated requests."
+            "description": "Login with email and password. The JWT token is auto-saved to `auth_token` environment variable for use in subsequent requests."
           },
-          "response": []
-        },
-        {
-          "name": "Verify Email",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"token\": \"your-verification-token-here\"\n}"
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\"\n  },\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}"
             },
-            "url": {
-              "raw": "{{base_url}}/api/v1/auth/verify-email",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "verify-email"]
-            },
-            "description": "Verify email address using token sent to email"
-          },
-          "response": []
+            {
+              "name": "Email Not Verified",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Please verify your email before logging in\"\n}"
+            }
+          ]
         },
         {
           "name": "Forgot Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.resetToken) {",
+                  "    pm.environment.set('reset_token', jsonData.resetToken);",
+                  "    console.log('Reset token saved:', jsonData.resetToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/forgot-password",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "auth", "forgot-password"]
             },
-            "description": "Request password reset email"
+            "description": "Request a password reset email. In dev mode, the `resetToken` is returned in the response."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success (Dev Mode)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"If your email is registered, you will receive password reset instructions\",\n  \"resetToken\": \"eyJhbGciOiJIUzI1NiIs...\"\n}"
+            }
+          ]
         },
         {
           "name": "Reset Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Message confirms reset', () => pm.expect(pm.response.json().message).to.include('reset successful'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"token\": \"your-reset-token-here\",\n  \"password\": \"newSecurePassword123\"\n}"
+              "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"password\": \"newSecurePassword456\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/reset-password",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "auth", "reset-password"]
             },
-            "description": "Reset password using reset token"
+            "description": "Reset password using the token from Forgot Password response (dev mode)."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Password reset successful! You can now log in with your new password.\"\n}"
+            }
+          ]
         },
         {
-          "name": "Resend Verification Email",
+          "name": "Resend Verification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.verificationToken) {",
+                  "    pm.environment.set('verification_token', jsonData.verificationToken);",
+                  "    console.log('New verification token saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+              "raw": "{\n  \"email\": \"{{user_email}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/resend-verification",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "auth", "resend-verification"]
             },
-            "description": "Resend email verification link"
+            "description": "Resend the email verification link. In dev mode, returns a new `verificationToken`."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Verification email has been resent. Please check your inbox.\",\n  \"verificationToken\": \"eyJhbGciOiJIUzI1NiIs...\"\n}"
+            }
+          ]
         }
-      ]
+      ],
+      "description": "Complete authentication flow: signup → verify email → login → manage account"
     },
     {
-      "name": "📁 Anonymous File Operations",
+      "name": "Anonymous Files",
       "item": [
         {
           "name": "Upload File (Anonymous)",
@@ -226,13 +382,18 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    const response = pm.response.json();",
-                  "    if (response.file && response.file.file_id) {",
-                  "        pm.environment.set('anonymous_file_id', response.file.file_id);",
-                  "        pm.environment.set('anonymous_secret_key', response.file.secret_key);",
-                  "        console.log('File uploaded successfully:', response.file.file_id);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data) {",
+                  "    if (jsonData.data.file_id) {",
+                  "        pm.environment.set('anonymous_file_id', jsonData.data.file_id);",
                   "    }",
+                  "    if (jsonData.data.secret_key) {",
+                  "        pm.environment.set('anonymous_secret_key', jsonData.data.secret_key);",
+                  "    }",
+                  "    console.log('Anonymous file uploaded, ID:', jsonData.data.file_id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -258,19 +419,36 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "files", "upload"]
             },
-            "description": "Upload a file without authentication. Returns file_id and secret_key for download."
+            "description": "Upload a file without authentication. Returns `file_id` and `secret_key` for later download.\n\n**Rate Limit:** 5 requests per minute"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"File uploaded successfully\",\n  \"data\": {\n    \"file_id\": \"a1b2c3d4e5\",\n    \"secret_key\": \"f6e7d8c9b0a1b2c3d4e5f6a7b8c9d0e1\",\n    \"file_name\": \"document.pdf\",\n    \"url\": \"https://bucket.r2.cloudflarestorage.com/anonymous/a1b2c3d4e5-document.pdf\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Download File (Anonymous)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has download URL', () => pm.expect(pm.response.json().data.url).to.exist);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -281,28 +459,38 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "files", "download"]
             },
-            "description": "Download an anonymously uploaded file using file_id and secret_key"
+            "description": "Download an anonymously uploaded file using `file_id` and `secret_key`.\n\nReturns a presigned URL valid for 1 hour."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"File download URL generated\",\n  \"data\": {\n    \"file_id\": \"a1b2c3d4e5\",\n    \"file_name\": \"document.pdf\",\n    \"url\": \"https://bucket.r2.cloudflarestorage.com/anonymous/a1b2c3d4e5-document.pdf?X-Amz-Signature=...\"\n  }\n}"
+            }
+          ]
         }
-      ]
+      ],
+      "description": "Anonymous file upload and download operations — no authentication required"
     },
     {
-      "name": "🔒 Authenticated File Operations",
+      "name": "Authenticated Files",
       "item": [
         {
-          "name": "Upload File (Authenticated)",
+          "name": "Upload File",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    const response = pm.response.json();",
-                  "    if (response.file && response.file.id) {",
-                  "        pm.environment.set('user_file_id', response.file.id);",
-                  "        console.log('File uploaded successfully:', response.file.id);",
-                  "    }",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.environment.set('user_file_id', jsonData.data.id.toString());",
+                  "    console.log('File uploaded, ID:', jsonData.data.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -313,11 +501,7 @@
             "auth": {
               "type": "bearer",
               "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
               ]
             },
             "method": "POST",
@@ -329,19 +513,19 @@
                   "key": "file",
                   "type": "file",
                   "src": [],
-                  "description": "Select a file to upload"
+                  "description": "Select a file to upload (max 5GB)"
                 },
                 {
                   "key": "is_public",
                   "value": "false",
                   "type": "text",
-                  "description": "Make file publicly accessible (optional)"
+                  "description": "Make file publicly accessible"
                 },
                 {
                   "key": "folder_path",
                   "value": "/",
                   "type": "text",
-                  "description": "Folder path for organization (optional)"
+                  "description": "Folder path for file organization"
                 }
               ]
             },
@@ -350,69 +534,120 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "upload"]
             },
-            "description": "Upload a file to authenticated user's account with organization options"
+            "description": "Upload a file to your authenticated account. Supports folder organization and public flags.\n\n**Rate Limit:** 5 uploads per minute"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"File uploaded successfully\",\n  \"data\": {\n    \"id\": 1,\n    \"filename\": \"report.pdf\",\n    \"file_size\": 2048576,\n    \"file_type\": \"application/pdf\",\n    \"is_public\": false,\n    \"folder_path\": \"/\",\n    \"created_at\": \"2025-01-15T10:30:00.000Z\"\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "Get All User Files",
+          "name": "List My Files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Data is array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
               ]
             },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/files?page=1&limit=20",
+              "raw": "{{base_url}}/api/v1/files",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "files"],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1",
-                  "description": "Page number"
-                },
-                {
-                  "key": "limit",
-                  "value": "20",
-                  "description": "Files per page"
-                },
-                {
-                  "key": "folder_path",
-                  "value": "/",
-                  "description": "Filter by folder",
-                  "disabled": true
-                },
-                {
-                  "key": "search",
-                  "value": "document",
-                  "description": "Search by filename",
-                  "disabled": true
-                }
-              ]
+              "path": ["api", "v1", "files"]
             },
-            "description": "Retrieve all files belonging to the authenticated user with pagination"
+            "description": "Retrieve all files belonging to the authenticated user with pagination support."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"filename\": \"report.pdf\",\n      \"file_size\": 2048576,\n      \"file_type\": \"application/pdf\",\n      \"is_public\": false,\n      \"folder_path\": \"/\",\n      \"created_at\": \"2025-01-15T10:30:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
         },
         {
-          "name": "Get File Metadata",
+          "name": "File Count",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Has total_files', () => pm.expect(pm.response.json().data.total_files).to.be.a('number'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/count",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "count"]
+            },
+            "description": "Get the total number of files uploaded by the authenticated user."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"total_files\": 5\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get File Metadata",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Has file data', () => pm.expect(pm.response.json().data).to.exist);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
               ]
             },
             "method": "GET",
@@ -422,21 +657,38 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "files", "{{user_file_id}}"]
             },
-            "description": "Get detailed metadata for a specific file"
+            "description": "Get detailed metadata for a specific file by ID."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"filename\": \"report.pdf\",\n    \"file_size\": 2048576,\n    \"file_type\": \"application/pdf\",\n    \"is_public\": false,\n    \"folder_path\": \"/\",\n    \"s3_key\": \"uploads/1/report.pdf\",\n    \"created_at\": \"2025-01-15T10:30:00.000Z\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Get Download Link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Has download_url', () => pm.expect(pm.response.json().data.download_url).to.exist);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
               ]
             },
             "method": "GET",
@@ -446,54 +698,90 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "download", "{{user_file_id}}"]
             },
-            "description": "Generate a secure download link for the file"
+            "description": "Generate a presigned download URL for the file. The URL expires in 1 hour."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"download_url\": \"https://bucket.r2.cloudflarestorage.com/uploads/1/report.pdf?X-Amz-Signature=...\",\n    \"filename\": \"report.pdf\",\n    \"file_size\": 2048576,\n    \"expires_at\": \"2025-01-15T11:30:00.000Z\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Create Shareable Link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Has share_link', () => pm.expect(pm.response.json().data.share_link).to.exist);",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.access_token) {",
+                  "    pm.environment.set('share_access_token', jsonData.data.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
               ]
             },
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"expiry_hours\": 24,\n  \"password\": \"optional-password\",\n  \"download_limit\": 10\n}"
+              "raw": "{\n  \"expiry_hours\": 24,\n  \"password\": \"share-password\",\n  \"download_limit\": 10\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/files/{{user_file_id}}/share",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "files", "{{user_file_id}}", "share"]
             },
-            "description": "Create a shareable link with optional password protection and expiration"
+            "description": "Create a shareable link for the file with optional password protection and download limits."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"share_link\": \"http://localhost:3001/shared/abc123def456\",\n    \"access_token\": \"abc123def456\",\n    \"expires_at\": \"2025-01-16T10:30:00.000Z\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Delete File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Message confirms deletion', () => pm.expect(pm.response.json().message).to.include('deleted'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
               "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
               ]
             },
             "method": "DELETE",
@@ -503,32 +791,113 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "files", "{{user_file_id}}"]
             },
-            "description": "Permanently delete a file from storage and database"
+            "description": "Permanently delete a file from storage and database."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"File deleted successfully\"\n}"
+            }
+          ]
         }
-      ]
-    }
-  ],
-  "event": [
+      ],
+      "description": "Authenticated file management — upload, list, download, share, and delete files"
+    },
     {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Set base URL if not already set",
-          "if (!pm.environment.get('base_url')) {",
-          "    pm.environment.set('base_url', 'http://localhost:3000');",
-          "}"
-        ]
-      }
+      "name": "User Stats & Storage",
+      "item": [
+        {
+          "name": "Get Storage Usage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Has storage data', () => pm.expect(pm.response.json().data.total_storage_used).to.exist);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/storage",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "storage"]
+            },
+            "description": "Get storage usage details including total used, limit (2GB), and percentage used."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"total_storage_used\": 524288000,\n    \"storage_limit\": 2147483648,\n    \"storage_used_mb\": 500,\n    \"storage_limit_mb\": 2048,\n    \"percentage_used\": 25,\n    \"remaining_storage\": 1624293648\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success is true', () => pm.expect(pm.response.json().success).to.be.true);",
+                  "pm.test('Has overview', () => pm.expect(pm.response.json().data.overview).to.exist);",
+                  "pm.test('Has file_types', () => pm.expect(pm.response.json().data.file_types).to.be.an('array'));",
+                  "pm.test('Has activity', () => pm.expect(pm.response.json().data.activity).to.exist);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{auth_token}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "stats"]
+            },
+            "description": "Get comprehensive user statistics including overview, file type breakdown, and recent activity."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"overview\": {\n      \"total_files\": 5,\n      \"total_storage_used\": 524288000,\n      \"storage_limit\": 2147483648,\n      \"storage_used_mb\": 500,\n      \"storage_limit_mb\": 2048,\n      \"percentage_used\": 25,\n      \"remaining_storage\": 1624293648\n    },\n    \"file_types\": [\n      { \"category\": \"Documents\", \"count\": 3, \"size\": 104857600, \"size_mb\": 100 }\n    ],\n    \"activity\": {\n      \"recent_uploads_7d\": 2,\n      \"public_files\": 1\n    }\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Storage tracking and usage statistics for authenticated users"
     }
   ],
   "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:3000",
-      "type": "string"
-    }
+    { "key": "base_url", "value": "http://localhost:3000", "type": "string" }
   ]
 }
