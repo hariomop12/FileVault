@@ -47,6 +47,9 @@ const Files: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [shareFileId, setShareFileId] = useState<number | null>(null);
+  const [shareEmail, setShareEmail] = useState('');
+  const [sendingShare, setSendingShare] = useState(false);
 
   const fetchFiles = async () => {
     try {
@@ -84,50 +87,43 @@ const Files: React.FC = () => {
     }
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = (file: File) => {
     setUploading(true);
     setUploadProgress(0);
-    const simulateProgress = () => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 20 + 5;
-        if (progress >= 95) { progress = 95; clearInterval(interval); }
-        setUploadProgress(Math.round(progress));
-      }, 200);
-      return interval;
+    const formData = new FormData();
+    formData.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      }
     };
-    const progressInterval = simulateProgress();
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await fetch('/api/v1/upload', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
-        body: formData,
-      });
-      clearInterval(progressInterval);
+    xhr.onload = () => {
       setUploadProgress(100);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
+      setTimeout(() => {
+        setUploading(false);
+        setUploadProgress(0);
+        if (xhr.status >= 200 && xhr.status < 300) {
           fetchFiles();
           fetchStats();
         } else {
-          throw new Error(data.message || 'Upload failed');
+          try {
+            const err = JSON.parse(xhr.responseText);
+            alert(err.message || 'Upload failed');
+          } catch {
+            alert('Upload failed. Please try again.');
+          }
         }
-      } else {
-        const errorText = await response.text();
-        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
-      }
-    } catch (error) {
-      clearInterval(progressInterval);
-      console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
-    } finally {
+      }, 500);
+    };
+    xhr.onerror = () => {
       setUploading(false);
       setUploadProgress(0);
-    }
+      alert('Upload failed. Please try again.');
+    };
+    xhr.open('POST', '/api/v1/upload');
+    xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('auth_token')}`);
+    xhr.send(formData);
   };
 
   const handleDeleteFile = async (fileId: number) => {
@@ -161,6 +157,32 @@ const Files: React.FC = () => {
       }
     } catch (error) {
       alert('Download failed. Please try again.');
+    }
+  };
+
+  const handleShareByEmail = async () => {
+    if (!shareFileId || !shareEmail) return;
+    setSendingShare(true);
+    try {
+      const response = await fetch(`/api/v1/files/${shareFileId}/share-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: shareEmail }),
+      });
+      if (response.ok) {
+        alert('File shared via email successfully!');
+        setShareFileId(null);
+        setShareEmail('');
+      } else {
+        throw new Error('Failed to share via email');
+      }
+    } catch (error) {
+      alert('Failed to share via email. Please try again.');
+    } finally {
+      setSendingShare(false);
     }
   };
 
@@ -400,9 +422,13 @@ const Files: React.FC = () => {
                     className="flex-1 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
                     Download
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleCreateShareLink(file.id); }}
+                  <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(file.download_url || ''); alert('Download link copied!'); }}
                     className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
-                    Share
+                    Copy Link
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setShareFileId(file.id); }}
+                    className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}>
+                    Email
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }}
                     className="py-2 px-3 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
@@ -427,9 +453,13 @@ const Files: React.FC = () => {
                     className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
                     Download
                   </button>
-                  <button onClick={() => handleCreateShareLink(file.id)}
+                  <button onClick={() => { navigator.clipboard.writeText(file.download_url || ''); alert('Download link copied!'); }}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
-                    Share
+                    Copy Link
+                  </button>
+                  <button onClick={() => setShareFileId(file.id)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}>
+                    Email
                   </button>
                   <button onClick={() => handleDeleteFile(file.id)}
                     className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
@@ -439,6 +469,41 @@ const Files: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Share by Email Modal */}
+      {shareFileId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className={`rounded-2xl p-6 w-full max-w-sm mx-4 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-xl'}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Share File via Email</h3>
+            <input
+              type="email"
+              placeholder="Enter recipient email"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+              className={`w-full px-4 py-2.5 rounded-xl border input-focus mb-4 ${
+                theme === 'dark'
+                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+              }`}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShareFileId(null); setShareEmail(''); }}
+                className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShareByEmail}
+                disabled={!shareEmail || sendingShare}
+                className="flex-1 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all disabled:opacity-50"
+              >
+                {sendingShare ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

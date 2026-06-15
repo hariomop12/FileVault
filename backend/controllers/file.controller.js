@@ -287,6 +287,29 @@ const UserFileController = {
     }
   },
 
+  // Share file via email
+  shareViaEmail: async (req, res) => {
+    try {
+      const fileId = req.params.id;
+      const userId = req.user.id;
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ success: false, message: "Recipient email is required" });
+      }
+
+      const result = await FileService.shareViaEmail(fileId, userId, email);
+
+      if (result.error) {
+        return res.status(404).json({ success: false, message: result.error });
+      }
+
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      return handleControllerError(error, "share file via email", res);
+    }
+  },
+
   // Create shareable link
   createShareableLink: async (req, res) => {
     try {

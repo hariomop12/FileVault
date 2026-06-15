@@ -356,6 +356,7 @@ router.delete("/files/:id(\\d+)", UserFileController.deleteFile);
  *         description: File not found
  */
 router.post("/files/:id(\\d+)/share", UserFileController.createShareableLink);
+router.post("/files/:id(\\d+)/share-email", UserFileController.shareViaEmail);
 /**
  * @swagger
  * /api/v1/storage:

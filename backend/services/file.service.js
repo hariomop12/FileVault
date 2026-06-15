@@ -8,8 +8,26 @@ const {
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { pool, query } = require("../config/db");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const logger = require("../utils/logger");
 const LocalStorageService = require("./localStorage.service");
+
+// Lazy nodemailer transporter
+let _transporter = null;
+const getTransporter = () => {
+  if (!_transporter) {
+    _transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || "smtp.gmail.com",
+      port: parseInt(process.env.EMAIL_PORT || "587"),
+      secure: process.env.EMAIL_SECURE === "true",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  }
+  return _transporter;
+};
 
 // Initialize local storage service if not using R2
 const localStorage = storageConfig.type === 'LOCAL' ? new LocalStorageService(storageConfig.uploadDir) : null;
@@ -226,6 +244,67 @@ const FileService = {
     } catch (error) {
       logger.error(`❌ Error creating shareable link: ${error.message}`);
       throw new Error("Failed to create shareable link");
+    }
+  },
+
+  // Share file via email
+  shareViaEmail: async (fileId, userId, recipientEmail) => {
+    try {
+      const fileResult = await query(
+        `SELECT id, filename, s3_key FROM filevault_files_authed WHERE id = $1 AND user_id = $2`,
+        [fileId, userId]
+      );
+
+      if (fileResult.rows.length === 0) {
+        return { error: "File not found or you don't have permission" };
+      }
+
+      const userResult = await query(
+        `SELECT name FROM filevault_users WHERE id = $1`,
+        [userId]
+      );
+      const senderName = userResult.rows[0]?.name || 'Someone';
+
+      const accessToken = crypto.randomBytes(16).toString("hex");
+
+      await query(
+        `UPDATE filevault_files_authed SET access_token = $1, is_public = true WHERE id = $2`,
+        [accessToken, fileId]
+      );
+
+      const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const shareableLink = `${baseUrl}/shared/${accessToken}`;
+
+      getTransporter().sendMail({
+        from: process.env.EMAIL_FROM || '"FileVault" <no-reply@filevault.com>',
+        to: recipientEmail,
+        subject: `${senderName} shared a file with you on FileVault`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #4a5568;">A file has been shared with you!</h2>
+            <p>${senderName} shared a file with you via FileVault.</p>
+            <p style="font-size: 16px; font-weight: bold; color: #2d3748;">${fileResult.rows[0].filename}</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${shareableLink}"
+                 style="background-color: #2563eb; color: white; padding: 12px 24px;
+                        text-decoration: none; border-radius: 8px; font-weight: bold;">
+                Download File
+              </a>
+            </div>
+            <p style="color: #718096; font-size: 14px;">This link is publicly accessible. Anyone with this link can download the file.</p>
+            <p style="color: #718096; font-size: 14px;">Best regards,<br>The FileVault Team</p>
+          </div>
+        `,
+      }).catch(err => logger.warn(`Email sending failed (non-blocking): ${err.message}`));
+
+      return {
+        file_id: fileId,
+        shared_with: recipientEmail,
+        shareable_link: shareableLink,
+      };
+    } catch (error) {
+      logger.error(`❌ Error sharing file via email: ${error.message}`);
+      throw new Error("Failed to share file via email");
     }
   },
 
