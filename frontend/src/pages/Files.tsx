@@ -43,9 +43,7 @@ const getFileTypeBadge = (fileType: string): { color: string; icon: string } => 
   return { color: 'from-gray-500 to-gray-600', icon: '📁' };
 };
 
-const canPreview = (fileType: string): boolean => {
-  return fileType.startsWith('image/') || fileType.startsWith('video/') || fileType.startsWith('audio/') || fileType.includes('pdf');
-};
+const canPreview = (_fileType: string): boolean => true;
 
 const Files: React.FC = () => {
   const { theme } = useTheme();
@@ -208,6 +206,32 @@ const Files: React.FC = () => {
     }
   };
 
+  const handleCreateShareLink = async (fileId: number) => {
+    try {
+      const response = await fetch(`/api/v1/files/${fileId}/share`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.share_url) {
+          navigator.clipboard.writeText(data.share_url);
+          alert('Share link copied to clipboard!');
+        } else if (data.data?.shareable_link) {
+          navigator.clipboard.writeText(data.data.shareable_link);
+          alert('Share link copied to clipboard!');
+        }
+      } else {
+        throw new Error('Share link creation failed');
+      }
+    } catch {
+      alert('Failed to create share link.');
+    }
+  };
+
   const handleShareByEmail = async () => {
     if (!shareFileId || !shareEmail) return;
     setSendingShare(true);
@@ -284,8 +308,9 @@ const Files: React.FC = () => {
               </div>
             ) : (
               <div className="text-center p-8">
-                <span className="text-5xl mb-4 block">{badge.icon}</span>
-                <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Preview not available for this file type</p>
+                <span className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-5xl mx-auto mb-4 shadow-lg`}>{badge.icon}</span>
+                <h3 className={`text-lg font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{previewFile.filename}</h3>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{previewFile.file_type}</p>
               </div>
             )}
           </div>
@@ -469,14 +494,12 @@ const Files: React.FC = () => {
           <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'space-y-3'}>
             {filteredFiles.map((file) => {
               const badge = getFileTypeBadge(file.file_type);
-              const previewable = canPreview(file.file_type);
               return viewMode === 'grid' ? (
-                <div key={file.id} className={`group rounded-2xl p-5 card-hover ${theme === 'dark' ? 'bg-gray-900 border border-gray-800 hover:border-blue-500/30' : 'bg-white border border-gray-200 hover:border-blue-300 shadow-sm'}`}>
+                <div key={file.id} className={`group rounded-2xl p-5 card-hover cursor-pointer ${theme === 'dark' ? 'bg-gray-900 border border-gray-800 hover:border-blue-500/30' : 'bg-white border border-gray-200 hover:border-blue-300 shadow-sm'}`} onClick={() => setPreviewFile(file)}>
                   <div className="flex items-start justify-between mb-4">
-                    <button onClick={() => previewable && setPreviewFile(file)}
-                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-xl shadow-lg shrink-0 ${previewable ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-xl shadow-lg shrink-0`}>
                       {badge.icon}
-                    </button>
+                    </div>
                     {file.is_public && (
                       <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700'}`}>Public</span>
                     )}
@@ -487,16 +510,14 @@ const Files: React.FC = () => {
                     <span className={theme === 'dark' ? 'text-gray-600' : 'text-gray-300'}>&middot;</span>
                     <span className={theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}>{new Date(file.created_at).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0">
-                    {previewable && (
-                      <button onClick={() => setPreviewFile(file)}
-                        className="flex-1 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-                        Preview
-                      </button>
-                    )}
-                    <button onClick={() => { window.open(file.download_url, '_blank'); }}
+                  <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => setPreviewFile(file)}
+                      className="flex-1 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+                      Preview
+                    </button>
+                    <button onClick={() => handleCreateShareLink(file.id)}
                       className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
-                      Open
+                      Share
                     </button>
                     <button onClick={() => setShareFileId(file.id)}
                       className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}>
@@ -509,11 +530,10 @@ const Files: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div key={file.id} className={`group flex items-center gap-4 rounded-xl px-5 py-4 card-hover ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
-                  <button onClick={() => previewable && setPreviewFile(file)}
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-lg shadow-lg shrink-0 ${previewable ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}>
+                <div key={file.id} className={`group flex items-center gap-4 rounded-xl px-5 py-4 card-hover cursor-pointer ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`} onClick={() => setPreviewFile(file)}>
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-lg shadow-lg shrink-0`}>
                     {badge.icon}
-                  </button>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{file.filename}</p>
                     <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -521,16 +541,14 @@ const Files: React.FC = () => {
                       {file.is_public && <span className="ml-2 text-emerald-500 font-medium">Public</span>}
                     </p>
                   </div>
-                  <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {previewable && (
-                      <button onClick={() => setPreviewFile(file)}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-                        Preview
-                      </button>
-                    )}
-                    <button onClick={() => { window.open(file.download_url, '_blank'); }}
+                  <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => setPreviewFile(file)}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+                      Preview
+                    </button>
+                    <button onClick={() => handleCreateShareLink(file.id)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors">
-                      Open
+                      Share
                     </button>
                     <button onClick={() => setShareFileId(file.id)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-800 hover:bg-emerald-700 text-emerald-300 transition-colors">
