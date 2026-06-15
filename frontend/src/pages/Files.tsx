@@ -62,8 +62,11 @@ const Files: React.FC = () => {
   const [newFolderName, setNewFolderName] = useState('');
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [shareFileId, setShareFileId] = useState<number | null>(null);
+  const [shareLink, setShareLink] = useState('');
+  const [shareLoading, setShareLoading] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [sendingShare, setSendingShare] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const token = () => localStorage.getItem('auth_token');
 
@@ -206,29 +209,30 @@ const Files: React.FC = () => {
     }
   };
 
-  const handleCreateShareLink = async (fileId: number) => {
+  const handleOpenShare = async (fileId: number) => {
+    setShareLink('');
+    setShareEmail('');
+    setShareCopied(false);
+    setShareFileId(fileId);
+    setShareLoading(true);
     try {
       const response = await fetch(`/api/v1/files/${fileId}/share`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token()}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' },
       });
       if (response.ok) {
         const data = await response.json();
-        if (data.share_url) {
-          navigator.clipboard.writeText(data.share_url);
-          alert('Share link copied to clipboard!');
-        } else if (data.data?.shareable_link) {
-          navigator.clipboard.writeText(data.data.shareable_link);
-          alert('Share link copied to clipboard!');
-        }
-      } else {
-        throw new Error('Share link creation failed');
+        setShareLink(data.share_url || data.data?.shareable_link || '');
       }
-    } catch {
-      alert('Failed to create share link.');
+    } catch { /* ignore */ }
+    setShareLoading(false);
+  };
+
+  const handleCopyShareLink = () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
     }
   };
 
@@ -242,17 +246,23 @@ const Files: React.FC = () => {
         body: JSON.stringify({ email: shareEmail }),
       });
       if (response.ok) {
-        alert('File shared via email successfully!');
-        setShareFileId(null);
         setShareEmail('');
+        alert('File shared via email successfully!');
       } else {
-        throw new Error('Failed to share via email');
+        throw new Error();
       }
     } catch {
       alert('Failed to share via email. Please try again.');
     } finally {
       setSendingShare(false);
     }
+  };
+
+  const closeShareModal = () => {
+    setShareFileId(null);
+    setShareLink('');
+    setShareEmail('');
+    setShareCopied(false);
   };
 
   const selectFolder = (folderId: number | null) => {
@@ -515,13 +525,9 @@ const Files: React.FC = () => {
                       className="flex-1 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
                       Preview
                     </button>
-                    <button onClick={() => handleCreateShareLink(file.id)}
+                    <button onClick={() => handleOpenShare(file.id)}
                       className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
                       Share
-                    </button>
-                    <button onClick={() => setShareFileId(file.id)}
-                      className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}>
-                      Email
                     </button>
                     <button onClick={() => handleDeleteFile(file.id)}
                       className="py-2 px-3 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
@@ -546,13 +552,9 @@ const Files: React.FC = () => {
                       className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
                       Preview
                     </button>
-                    <button onClick={() => handleCreateShareLink(file.id)}
+                    <button onClick={() => handleOpenShare(file.id)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors">
                       Share
-                    </button>
-                    <button onClick={() => setShareFileId(file.id)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-800 hover:bg-emerald-700 text-emerald-300 transition-colors">
-                      Email
                     </button>
                     <button onClick={() => handleDeleteFile(file.id)}
                       className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
@@ -565,19 +567,48 @@ const Files: React.FC = () => {
           </div>
         )}
 
-        {/* Share by Email Modal */}
+        {/* Share Modal */}
         {shareFileId !== null && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className={`rounded-2xl p-6 w-full max-w-sm mx-4 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-xl'}`}>
-              <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Share File via Email</h3>
-              <input type="email" placeholder="Enter recipient email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-xl border input-focus mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'}`} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={closeShareModal}>
+            <div className={`rounded-2xl p-6 w-full max-w-md ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-xl'}`}
+              onClick={e => e.stopPropagation()}>
+              <h3 className={`text-lg font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Share File</h3>
+              <p className={`text-sm mb-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Share a link or send via email</p>
+
+              {/* Share link */}
+              <label className={`text-xs font-medium mb-1.5 block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Shareable Link</label>
+              <div className="flex gap-2 mb-4">
+                <input type="text" readOnly value={shareLoading ? 'Generating link...' : shareLink}
+                  placeholder="Click to generate link"
+                  className={`flex-1 px-4 py-2.5 rounded-xl border text-sm input-focus truncate ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`} />
+                {shareLink ? (
+                  <button onClick={handleCopyShareLink}
+                    className="px-4 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all shrink-0">
+                    {shareCopied ? 'Copied!' : 'Copy'}
+                  </button>
+                ) : (
+                  <button disabled
+                    className="px-4 py-2.5 rounded-xl font-medium text-sm bg-gray-700 text-gray-500 shrink-0">Copy</button>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-gray-700" />
+                <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>OR</span>
+                <div className="flex-1 h-px bg-gray-700" />
+              </div>
+
+              {/* Email share */}
+              <label className={`text-xs font-medium mb-1.5 block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Send via Email</label>
+              <input type="email" placeholder="recipient@example.com" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}
+                className={`w-full px-4 py-2.5 rounded-xl border input-focus mb-5 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'}`} />
               <div className="flex gap-3">
-                <button onClick={() => { setShareFileId(null); setShareEmail(''); }}
+                <button onClick={closeShareModal}
                   className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>Cancel</button>
                 <button onClick={handleShareByEmail} disabled={!shareEmail || sendingShare}
                   className="flex-1 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all disabled:opacity-50">
-                  {sendingShare ? 'Sending...' : 'Send'}
+                  {sendingShare ? 'Sending...' : 'Send Email'}
                 </button>
               </div>
             </div>
