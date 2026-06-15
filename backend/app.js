@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const fileRoutes = require("./routes/file.routes");
 const authRoutes = require("./routes/auth.routes");
 const userFileRoutes = require("./routes/userFile.routes");
+const folderRoutes = require("./routes/folder.routes");
 const cors = require("cors");
 const helmet = require("helmet");
 const compression = require('compression');
@@ -93,6 +94,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
 app.use("/api/v1/files", fileRoutes);  // Anonymous file routes (no auth)
 app.use("/api/v1/auth", authLimiter, authRoutes);  // Auth routes (signup, login, etc.)
 app.use("/api/v1", userFileRoutes);  // Authenticated user routes (requires auth)
+app.use("/api/v1", folderRoutes);  // Folder routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {

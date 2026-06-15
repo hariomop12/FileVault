@@ -11,6 +11,13 @@ interface FileItem {
   download_url: string;
 }
 
+interface FolderItem {
+  id: number;
+  name: string;
+  file_count: string;
+  total_size: string;
+}
+
 interface UserStats {
   overview: {
     total_files: number;
@@ -32,35 +39,48 @@ const getFileTypeBadge = (fileType: string): { color: string; icon: string } => 
   if (fileType.includes('pdf')) return { color: 'from-red-500 to-red-600', icon: '📄' };
   if (fileType.includes('word') || fileType.includes('document')) return { color: 'from-blue-500 to-blue-600', icon: '📝' };
   if (fileType.includes('excel') || fileType.includes('spreadsheet') || fileType.includes('sheet')) return { color: 'from-emerald-500 to-emerald-600', icon: '📊' };
-  if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('tar')) return { color: 'from-cyan-500 to-cyan-600', icon: '📦' };
+  if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('tar') || fileType.includes('7z')) return { color: 'from-cyan-500 to-cyan-600', icon: '📦' };
   return { color: 'from-gray-500 to-gray-600', icon: '📁' };
+};
+
+const canPreview = (fileType: string): boolean => {
+  return fileType.startsWith('image/') || fileType.startsWith('video/') || fileType.startsWith('audio/') || fileType.includes('pdf');
 };
 
 const Files: React.FC = () => {
   const { theme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [folders, setFolders] = useState<FolderItem[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [statsLoading, setStatsLoading] = useState(true);
+  const [folderLoading, setFolderLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [shareFileId, setShareFileId] = useState<number | null>(null);
   const [shareEmail, setShareEmail] = useState('');
   const [sendingShare, setSendingShare] = useState(false);
 
-  const fetchFiles = async () => {
+  const token = () => localStorage.getItem('auth_token');
+
+  const fetchFiles = async (folderId: number | null = selectedFolderId) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/v1/files', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const url = folderId ? `/api/v1/folders/${folderId}` : '/api/v1/files';
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token()}` } });
       if (response.ok) {
         const data = await response.json();
-        setFiles(data.data?.files || []);
+        if (folderId) {
+          setFiles(data.data?.files || []);
+        } else {
+          setFiles(data.data?.files || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching files:', error);
@@ -69,23 +89,38 @@ const Files: React.FC = () => {
     }
   };
 
+  const fetchFolders = async () => {
+    try {
+      setFolderLoading(true);
+      const response = await fetch('/api/v1/folders', { headers: { 'Authorization': `Bearer ${token()}` } });
+      if (response.ok) {
+        const data = await response.json();
+        setFolders(data.data?.folders || []);
+      }
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+    } finally {
+      setFolderLoading(false);
+    }
+  };
+
   const fetchStats = async () => {
     try {
-      setStatsLoading(true);
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/v1/stats', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const response = await fetch('/api/v1/stats', { headers: { 'Authorization': `Bearer ${token()}` } });
       if (response.ok) {
         const data = await response.json();
         setStats(data.data);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
-    } finally {
-      setStatsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchFolders();
+    fetchFiles(null);
+    fetchStats();
+  }, []);
 
   const handleFileUpload = (file: File) => {
     setUploading(true);
@@ -94,9 +129,7 @@ const Files: React.FC = () => {
     formData.append('file', file);
     const xhr = new XMLHttpRequest();
     xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        setUploadProgress(Math.round((e.loaded / e.total) * 100));
-      }
+      if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
       setUploadProgress(100);
@@ -104,15 +137,10 @@ const Files: React.FC = () => {
         setUploading(false);
         setUploadProgress(0);
         if (xhr.status >= 200 && xhr.status < 300) {
-          fetchFiles();
+          fetchFiles(selectedFolderId);
           fetchStats();
         } else {
-          try {
-            const err = JSON.parse(xhr.responseText);
-            alert(err.message || 'Upload failed');
-          } catch {
-            alert('Upload failed. Please try again.');
-          }
+          alert('Upload failed. Please try again.');
         }
       }, 500);
     };
@@ -122,7 +150,7 @@ const Files: React.FC = () => {
       alert('Upload failed. Please try again.');
     };
     xhr.open('POST', '/api/v1/upload');
-    xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('auth_token')}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token()}`);
     xhr.send(formData);
   };
 
@@ -131,32 +159,52 @@ const Files: React.FC = () => {
     try {
       const response = await fetch(`/api/v1/files/${fileId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+        headers: { 'Authorization': `Bearer ${token()}` },
       });
       if (response.ok) {
-        fetchFiles();
+        fetchFiles(selectedFolderId);
+        fetchFolders();
         fetchStats();
-      } else {
-        throw new Error('Delete failed');
       }
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Delete failed. Please try again.');
     }
   };
 
-  const handleDownloadFile = async (file: FileItem) => {
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
     try {
-      if (file.download_url) {
-        const link = document.createElement('a');
-        link.href = file.download_url;
-        link.download = file.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      const response = await fetch('/api/v1/folders', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFolderName.trim() }),
+      });
+      if (response.ok) {
+        setNewFolderName('');
+        setShowNewFolderInput(false);
+        fetchFolders();
       }
     } catch (error) {
-      alert('Download failed. Please try again.');
+      console.error('Folder creation error:', error);
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: number) => {
+    if (!window.confirm('Delete this folder? Files inside will not be deleted.')) return;
+    try {
+      const response = await fetch(`/api/v1/folders/${folderId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token()}` },
+      });
+      if (response.ok) {
+        if (selectedFolderId === folderId) {
+          setSelectedFolderId(null);
+          fetchFiles(null);
+        }
+        fetchFolders();
+      }
+    } catch (error) {
+      console.error('Folder deletion error:', error);
     }
   };
 
@@ -166,10 +214,7 @@ const Files: React.FC = () => {
     try {
       const response = await fetch(`/api/v1/files/${shareFileId}/share-email`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: shareEmail }),
       });
       if (response.ok) {
@@ -179,34 +224,16 @@ const Files: React.FC = () => {
       } else {
         throw new Error('Failed to share via email');
       }
-    } catch (error) {
+    } catch {
       alert('Failed to share via email. Please try again.');
     } finally {
       setSendingShare(false);
     }
   };
 
-  const handleCreateShareLink = async (fileId: number) => {
-    try {
-      const response = await fetch(`/api/v1/files/${fileId}/share`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.share_url) {
-          navigator.clipboard.writeText(data.share_url);
-          alert('Share link copied to clipboard!');
-        }
-      } else {
-        throw new Error('Share link creation failed');
-      }
-    } catch (error) {
-      alert('Failed to create share link.');
-    }
+  const selectFolder = (folderId: number | null) => {
+    setSelectedFolderId(folderId);
+    fetchFiles(folderId);
   };
 
   const triggerFileUpload = () => fileInputRef.current?.click();
@@ -228,284 +255,319 @@ const Files: React.FC = () => {
     file.filename.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  useEffect(() => {
-    fetchFiles();
-    fetchStats();
-  }, []);
-
-  return (
-    <div>
-      <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="*/*" />
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>My Files</h1>
-          <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-            Manage your uploaded files
-          </p>
-        </div>
-        <button
-          onClick={triggerFileUpload}
-          disabled={uploading}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 ${
-            theme === 'dark'
-              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20'
-              : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20'
-          }`}
-        >
-          {uploading ? (
-            <>
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              {uploadProgress}%
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Upload File
-            </>
-          )}
-        </button>
-      </div>
-
-      {uploading && (
-        <div className="mb-6">
-          <div className="flex justify-between text-xs mb-1">
-            <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Upload Progress</span>
-            <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>{uploadProgress}%</span>
-          </div>
-          <div className={`h-2 rounded-full ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
-      {statsLoading ? (
-        <div className={`rounded-2xl p-6 mb-8 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
-          <div className="flex items-center justify-center gap-3 py-4">
-            <svg className={`w-5 h-5 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading your stats...</p>
-          </div>
-        </div>
-      ) : stats ? (
-        <div className={`rounded-2xl p-6 mb-8 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-            <MiniStat theme={theme} label="Storage Used" value={`${stats.overview.storage_used_mb} MB`} sub={`of ${stats.overview.storage_limit_mb} MB`} bar={stats.overview.percentage_used} />
-            <MiniStat theme={theme} label="Total Files" value={stats.overview.total_files} sub="files uploaded" />
-            <MiniStat theme={theme} label="Recent Activity" value={stats.activity.recent_uploads_7d} sub="uploads this week" />
-            <MiniStat theme={theme} label="Public Files" value={stats.activity.public_files} sub="publicly shared" />
-          </div>
-          {stats.file_types.length > 0 && (
-            <div>
-              <h3 className={`text-sm font-semibold mb-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>File Types</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {stats.file_types.map((ft, i) => (
-                  <div key={i} className={`rounded-xl px-4 py-3 ${theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{ft.category}</span>
-                      <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{ft.count} files</span>
-                    </div>
-                    <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{ft.size_mb} MB</span>
-                  </div>
-                ))}
-              </div>
+  const PreviewModal = () => {
+    if (!previewFile) return null;
+    const badge = getFileTypeBadge(previewFile.file_type);
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setPreviewFile(null)}>
+        <div className={`relative max-w-4xl w-full max-h-[90vh] rounded-2xl overflow-hidden ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-4 border-b border-gray-800">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${badge.color} flex items-center justify-center text-sm shrink-0`}>{badge.icon}</span>
+              <span className={`font-medium truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{previewFile.filename}</span>
             </div>
-          )}
-        </div>
-      ) : null}
-
-      {/* Search and Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className="relative flex-1 max-w-md w-full">
-          <svg className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search files..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border input-focus ${
-              theme === 'dark'
-                ? 'bg-gray-900 border-gray-700 text-white placeholder-gray-500'
-                : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
-            }`}
-          />
-        </div>
-        <button
-          onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-          className={`p-2.5 rounded-xl border transition-all duration-200 ${
-            theme === 'dark' ? 'bg-gray-900 border-gray-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          {viewMode === 'grid' ? (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6z" />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {/* Loading State */}
-      {loading ? (
-        <div className={`rounded-2xl p-12 text-center ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
-          <svg className={`w-8 h-8 mx-auto mb-4 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading your files...</p>
-        </div>
-      ) : filteredFiles.length === 0 ? (
-        <div className={`rounded-2xl p-14 text-center ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
-          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
-            <svg className={`w-8 h-8 ${theme === 'dark' ? 'text-gray-600' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-            </svg>
-          </div>
-          <h3 className={`text-lg font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {searchTerm ? 'No files found' : 'No files yet'}
-          </h3>
-          <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-            {searchTerm ? 'Try adjusting your search terms' : 'Upload your first file to get started'}
-          </p>
-          {!searchTerm && (
-            <button
-              onClick={triggerFileUpload}
-              className={`px-6 py-2.5 rounded-xl font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-lg shadow-blue-500/20`}
-            >
-              Upload Your First File
+            <button onClick={() => setPreviewFile(null)} className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-          )}
-        </div>
-      ) : (
-        <div className={viewMode === 'grid'
-          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5'
-          : 'space-y-3'
-        }>
-          {filteredFiles.map((file) => {
-            const badge = getFileTypeBadge(file.file_type);
-            return viewMode === 'grid' ? (
-              <div key={file.id} className={`group rounded-2xl p-5 card-hover ${theme === 'dark' ? 'bg-gray-900 border border-gray-800 hover:border-blue-500/30' : 'bg-white border border-gray-200 hover:border-blue-300 shadow-sm'}`}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-xl shadow-lg shrink-0`}>
-                    {badge.icon}
-                  </div>
-                  {file.is_public && (
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700'}`}>
-                      Public
-                    </span>
-                  )}
-                </div>
-                <h3 className={`font-semibold text-sm mb-1 truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} title={file.filename}>
-                  {file.filename}
-                </h3>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className={theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}>{formatFileSize(file.file_size)}</span>
-                  <span className={theme === 'dark' ? 'text-gray-600' : 'text-gray-300'}>&middot;</span>
-                  <span className={theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}>{new Date(file.created_at).toLocaleDateString()}</span>
-                </div>
-                <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0">
-                  <button onClick={(e) => { e.stopPropagation(); handleDownloadFile(file); }}
-                    className="flex-1 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-                    Download
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(file.download_url || ''); alert('Download link copied!'); }}
-                    className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
-                    Copy Link
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); setShareFileId(file.id); }}
-                    className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}>
-                    Email
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }}
-                    className="py-2 px-3 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
-                    Delete
-                  </button>
-                </div>
+          </div>
+          <div className="flex items-center justify-center p-4 max-h-[70vh] overflow-auto bg-black/40">
+            {previewFile.file_type.startsWith('image/') ? (
+              <img src={previewFile.download_url} alt={previewFile.filename} className="max-w-full max-h-[65vh] object-contain rounded-lg" />
+            ) : previewFile.file_type.includes('pdf') ? (
+              <embed src={previewFile.download_url} type="application/pdf" className="w-full h-[65vh] rounded-lg" />
+            ) : previewFile.file_type.startsWith('video/') ? (
+              <video src={previewFile.download_url} controls className="max-w-full max-h-[65vh] rounded-lg" autoPlay />
+            ) : previewFile.file_type.startsWith('audio/') ? (
+              <div className="text-center p-8">
+                <span className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-4xl mx-auto mb-4`}>{badge.icon}</span>
+                <audio src={previewFile.download_url} controls className="w-80" autoPlay />
               </div>
             ) : (
-              <div key={file.id} className={`group flex items-center gap-4 rounded-xl px-5 py-4 card-hover ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-lg shadow-lg shrink-0`}>
-                  {badge.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{file.filename}</p>
-                  <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                    {formatFileSize(file.file_size)} &middot; {new Date(file.created_at).toLocaleDateString()}
-                    {file.is_public && <span className="ml-2 text-emerald-500 font-medium">Public</span>}
-                  </p>
-                </div>
-                <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleDownloadFile(file)}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-                    Download
-                  </button>
-                  <button onClick={() => { navigator.clipboard.writeText(file.download_url || ''); alert('Download link copied!'); }}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
-                    Copy Link
-                  </button>
-                  <button onClick={() => setShareFileId(file.id)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}>
-                    Email
-                  </button>
-                  <button onClick={() => handleDeleteFile(file.id)}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
-                    Delete
-                  </button>
-                </div>
+              <div className="text-center p-8">
+                <span className="text-5xl mb-4 block">{badge.icon}</span>
+                <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Preview not available for this file type</p>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Share by Email Modal */}
-      {shareFileId !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className={`rounded-2xl p-6 w-full max-w-sm mx-4 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-xl'}`}>
-            <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Share File via Email</h3>
-            <input
-              type="email"
-              placeholder="Enter recipient email"
-              value={shareEmail}
-              onChange={(e) => setShareEmail(e.target.value)}
-              className={`w-full px-4 py-2.5 rounded-xl border input-focus mb-4 ${
-                theme === 'dark'
-                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
-                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
-              }`}
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setShareFileId(null); setShareEmail(''); }}
-                className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleShareByEmail}
-                disabled={!shareEmail || sendingShare}
-                className="flex-1 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all disabled:opacity-50"
-              >
-                {sendingShare ? 'Sending...' : 'Send'}
-              </button>
-            </div>
+            )}
+          </div>
+          <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-800">
+            <span className={`text-sm mr-auto ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatFileSize(previewFile.file_size)}</span>
+            <a href={previewFile.download_url} download={previewFile.filename}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+              Download
+            </a>
           </div>
         </div>
-      )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex gap-6">
+      <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="*/*" />
+
+      {/* Folder Sidebar */}
+      <aside className={`w-56 shrink-0 rounded-2xl p-4 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Folders</h2>
+          <button onClick={() => { setShowNewFolderInput(true); setNewFolderName(''); }}
+            className="p-1 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+          </button>
+        </div>
+
+        {showNewFolderInput && (
+          <div className="mb-3">
+            <input
+              type="text" placeholder="Folder name" value={newFolderName}
+              onChange={e => setNewFolderName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') setShowNewFolderInput(false); }}
+              className={`w-full px-3 py-1.5 text-xs rounded-lg border input-focus mb-2 ${
+                theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`} autoFocus
+            />
+            <div className="flex gap-1.5">
+              <button onClick={handleCreateFolder} className="flex-1 py-1 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Create</button>
+              <button onClick={() => setShowNewFolderInput(false)} className={`py-1 px-3 text-xs rounded-lg ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => selectFolder(null)}
+          className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors mb-1 ${
+            selectedFolderId === null
+              ? 'bg-blue-600 text-white'
+              : theme === 'dark' ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          <span className="mr-2">📁</span>All Files
+        </button>
+
+        {folderLoading ? (
+          <div className="space-y-2 mt-2">
+            {[1,2,3].map(i => <div key={i} className={`h-8 rounded-lg animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />)}
+          </div>
+        ) : folders.length === 0 ? (
+          <p className={`text-xs mt-4 text-center ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>No folders yet</p>
+        ) : (
+          <div className="space-y-0.5 mt-1 max-h-[calc(100vh-380px)] overflow-y-auto">
+            {folders.map(folder => (
+              <div key={folder.id} className="group flex items-center">
+                <button
+                  onClick={() => selectFolder(folder.id)}
+                  className={`flex-1 text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                    selectedFolderId === folder.id
+                      ? 'bg-blue-600 text-white'
+                      : theme === 'dark' ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="mr-2">📂</span>
+                  <span className="truncate">{folder.name}</span>
+                  <span className="ml-auto text-[10px] opacity-60">({folder.file_count})</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteFolder(folder.id)}
+                  className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-600/20 text-red-400 transition-all ml-1"
+                  title="Delete folder"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 min-w-0">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {selectedFolderId ? folders.find(f => f.id === selectedFolderId)?.name || 'Folder' : 'My Files'}
+            </h1>
+          </div>
+          <button
+            onClick={triggerFileUpload}
+            disabled={uploading}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
+              theme === 'dark'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20'
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20'
+            }`}
+          >
+            {uploading ? (
+              <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>{uploadProgress}%</>
+            ) : (
+              <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>Upload File</>
+            )}
+          </button>
+        </div>
+
+        {uploading && (
+          <div className="mb-6">
+            <div className="flex justify-between text-xs mb-1">
+              <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Upload Progress</span>
+              <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>{uploadProgress}%</span>
+            </div>
+            <div className={`h-2 rounded-full ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+            </div>
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="relative flex-1 max-w-md">
+            <svg className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              type="text" placeholder="Search files..." value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border input-focus ${
+                theme === 'dark' ? 'bg-gray-900 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+              }`}
+            />
+          </div>
+          <button onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+            className={`p-2.5 rounded-xl border transition-all duration-200 ${theme === 'dark' ? 'bg-gray-900 border-gray-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`}>
+            {viewMode === 'grid' ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6z" /></svg>
+            )}
+          </button>
+        </div>
+
+        {/* File List */}
+        {loading ? (
+          <div className={`rounded-2xl p-12 text-center ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <svg className={`w-8 h-8 mx-auto mb-4 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+            <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading your files...</p>
+          </div>
+        ) : filteredFiles.length === 0 ? (
+          <div className={`rounded-2xl p-14 text-center ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+              <svg className={`w-8 h-8 ${theme === 'dark' ? 'text-gray-600' : 'text-gray-300'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+              </svg>
+            </div>
+            <h3 className={`text-lg font-semibold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {searchTerm ? 'No files found' : 'No files yet'}
+            </h3>
+            <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+              {searchTerm ? 'Try adjusting your search terms' : 'Upload your first file to get started'}
+            </p>
+            {!searchTerm && (
+              <button onClick={triggerFileUpload} className="px-6 py-2.5 rounded-xl font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-lg shadow-blue-500/20">
+                Upload Your First File
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'space-y-3'}>
+            {filteredFiles.map((file) => {
+              const badge = getFileTypeBadge(file.file_type);
+              const previewable = canPreview(file.file_type);
+              return viewMode === 'grid' ? (
+                <div key={file.id} className={`group rounded-2xl p-5 card-hover ${theme === 'dark' ? 'bg-gray-900 border border-gray-800 hover:border-blue-500/30' : 'bg-white border border-gray-200 hover:border-blue-300 shadow-sm'}`}>
+                  <div className="flex items-start justify-between mb-4">
+                    <button onClick={() => previewable && setPreviewFile(file)}
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-xl shadow-lg shrink-0 ${previewable ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}>
+                      {badge.icon}
+                    </button>
+                    {file.is_public && (
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700'}`}>Public</span>
+                    )}
+                  </div>
+                  <h3 className={`font-semibold text-sm mb-1 truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`} title={file.filename}>{file.filename}</h3>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className={theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}>{formatFileSize(file.file_size)}</span>
+                    <span className={theme === 'dark' ? 'text-gray-600' : 'text-gray-300'}>&middot;</span>
+                    <span className={theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}>{new Date(file.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0">
+                    {previewable && (
+                      <button onClick={() => setPreviewFile(file)}
+                        className="flex-1 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+                        Preview
+                      </button>
+                    )}
+                    <button onClick={() => { window.open(file.download_url, '_blank'); }}
+                      className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
+                      Open
+                    </button>
+                    <button onClick={() => setShareFileId(file.id)}
+                      className={`py-2 px-3 text-xs font-medium rounded-lg transition-colors ${theme === 'dark' ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}>
+                      Email
+                    </button>
+                    <button onClick={() => handleDeleteFile(file.id)}
+                      className="py-2 px-3 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div key={file.id} className={`group flex items-center gap-4 rounded-xl px-5 py-4 card-hover ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
+                  <button onClick={() => previewable && setPreviewFile(file)}
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${badge.color} flex items-center justify-center text-lg shadow-lg shrink-0 ${previewable ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}>
+                    {badge.icon}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{file.filename}</p>
+                    <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                      {formatFileSize(file.file_size)} &middot; {new Date(file.created_at).toLocaleDateString()}
+                      {file.is_public && <span className="ml-2 text-emerald-500 font-medium">Public</span>}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {previewable && (
+                      <button onClick={() => setPreviewFile(file)}
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+                        Preview
+                      </button>
+                    )}
+                    <button onClick={() => { window.open(file.download_url, '_blank'); }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors">
+                      Open
+                    </button>
+                    <button onClick={() => setShareFileId(file.id)}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-800 hover:bg-emerald-700 text-emerald-300 transition-colors">
+                      Email
+                    </button>
+                    <button onClick={() => handleDeleteFile(file.id)}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Share by Email Modal */}
+        {shareFileId !== null && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className={`rounded-2xl p-6 w-full max-w-sm mx-4 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-xl'}`}>
+              <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Share File via Email</h3>
+              <input type="email" placeholder="Enter recipient email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}
+                className={`w-full px-4 py-2.5 rounded-xl border input-focus mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'}`} />
+              <div className="flex gap-3">
+                <button onClick={() => { setShareFileId(null); setShareEmail(''); }}
+                  className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>Cancel</button>
+                <button onClick={handleShareByEmail} disabled={!shareEmail || sendingShare}
+                  className="flex-1 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all disabled:opacity-50">
+                  {sendingShare ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <PreviewModal />
+      </div>
     </div>
   );
 };
