@@ -59,19 +59,20 @@ const Files: React.FC = () => {
   const updateDropRef = (fn: (file: File) => void) => { dropHandlerRef.current = fn; };
 
   useEffect(() => {
+    const opts = { passive: false };
     const handleDragEnter = (e: DragEvent) => { e.preventDefault(); dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); };
     const handleDragOver = (e: DragEvent) => { e.preventDefault(); };
     const handleDragLeave = (e: DragEvent) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); };
     const handleDrop = (e: DragEvent) => { e.preventDefault(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer?.files?.[0]; if (file) dropHandlerRef.current(file); };
-    window.addEventListener('dragenter', handleDragEnter);
-    window.addEventListener('dragover', handleDragOver);
-    window.addEventListener('dragleave', handleDragLeave);
-    window.addEventListener('drop', handleDrop);
+    document.addEventListener('dragenter', handleDragEnter, opts);
+    document.addEventListener('dragover', handleDragOver, opts);
+    document.addEventListener('dragleave', handleDragLeave, opts);
+    document.addEventListener('drop', handleDrop, opts);
     return () => {
-      window.removeEventListener('dragenter', handleDragEnter);
-      window.removeEventListener('dragover', handleDragOver);
-      window.removeEventListener('dragleave', handleDragLeave);
-      window.removeEventListener('drop', handleDrop);
+      document.removeEventListener('dragenter', handleDragEnter);
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('dragleave', handleDragLeave);
+      document.removeEventListener('drop', handleDrop);
     };
   }, []);
 
