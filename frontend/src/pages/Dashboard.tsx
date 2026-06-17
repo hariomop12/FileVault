@@ -55,6 +55,7 @@ const Dashboard: React.FC = () => {
   const [uploadResult, setUploadResult] = useState<{ file_id: string; secret_key: string; filename: string } | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [dragOver, setDragOver] = useState(false);
 
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
@@ -133,8 +134,29 @@ const Dashboard: React.FC = () => {
   useEffect(() => { fetchStats(); }, []);
 
   return (
-    <div>
-      <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="*/*" />
+    <div
+      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
+    >
+      {dragOver && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
+        >
+          <div className={`rounded-2xl p-12 text-center border-2 border-dashed ${theme === 'dark' ? 'bg-gray-900 border-blue-500' : 'bg-white border-blue-400'}`}>
+            <svg className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            <h3 className={`text-xl font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Drop your file here</h3>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Release to upload</p>
+          </div>
+        </div>
+      )}
+      <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-8">

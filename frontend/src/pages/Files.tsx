@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface FileItem {
@@ -18,20 +18,6 @@ interface FolderItem {
   total_size: string;
 }
 
-interface UserStats {
-  overview: {
-    total_files: number;
-    total_storage_used: number;
-    storage_limit: number;
-    storage_used_mb: number;
-    storage_limit_mb: number;
-    percentage_used: number;
-    remaining_storage: number;
-  };
-  file_types: Array<{ category: string; count: number; size: number; size_mb: number }>;
-  activity: { recent_uploads_7d: number; public_files: number };
-}
-
 const getFileTypeBadge = (fileType: string): { color: string; icon: string } => {
   if (fileType.startsWith('image/')) return { color: 'from-pink-500 to-rose-500', icon: '🖼️' };
   if (fileType.startsWith('video/')) return { color: 'from-purple-500 to-violet-500', icon: '🎥' };
@@ -43,14 +29,13 @@ const getFileTypeBadge = (fileType: string): { color: string; icon: string } => 
   return { color: 'from-gray-500 to-gray-600', icon: '📁' };
 };
 
-const canPreview = (_fileType: string): boolean => true;
+const getAuthToken = () => localStorage.getItem('auth_token');
 
 const Files: React.FC = () => {
   const { theme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [folders, setFolders] = useState<FolderItem[]>([]);
-  const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [folderLoading, setFolderLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -67,14 +52,13 @@ const Files: React.FC = () => {
   const [shareEmail, setShareEmail] = useState('');
   const [sendingShare, setSendingShare] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
-  const token = () => localStorage.getItem('auth_token');
-
-  const fetchFiles = async (folderId: number | null = selectedFolderId) => {
+  const fetchFiles = useCallback(async (folderId: number | null) => {
     try {
       setLoading(true);
       const url = folderId ? `/api/v1/folders/${folderId}` : '/api/v1/files';
-      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token()}` } });
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
       if (response.ok) {
         const data = await response.json();
         if (folderId) {
@@ -88,12 +72,12 @@ const Files: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchFolders = async () => {
+  const fetchFolders = useCallback(async () => {
     try {
       setFolderLoading(true);
-      const response = await fetch('/api/v1/folders', { headers: { 'Authorization': `Bearer ${token()}` } });
+      const response = await fetch('/api/v1/folders', { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
       if (response.ok) {
         const data = await response.json();
         setFolders(data.data?.folders || []);
@@ -103,25 +87,12 @@ const Files: React.FC = () => {
     } finally {
       setFolderLoading(false);
     }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const response = await fetch('/api/v1/stats', { headers: { 'Authorization': `Bearer ${token()}` } });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
+  }, []);
 
   useEffect(() => {
     fetchFolders();
     fetchFiles(null);
-    fetchStats();
-  }, []);
+  }, [fetchFiles, fetchFolders]);
 
   const handleFileUpload = (file: File) => {
     setUploading(true);
@@ -139,7 +110,6 @@ const Files: React.FC = () => {
         setUploadProgress(0);
         if (xhr.status >= 200 && xhr.status < 300) {
           fetchFiles(selectedFolderId);
-          fetchStats();
         } else {
           alert('Upload failed. Please try again.');
         }
@@ -151,7 +121,7 @@ const Files: React.FC = () => {
       alert('Upload failed. Please try again.');
     };
     xhr.open('POST', '/api/v1/upload');
-    xhr.setRequestHeader('Authorization', `Bearer ${token()}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${getAuthToken()}`);
     xhr.send(formData);
   };
 
@@ -160,12 +130,11 @@ const Files: React.FC = () => {
     try {
       const response = await fetch(`/api/v1/files/${fileId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token()}` },
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       });
       if (response.ok) {
         fetchFiles(selectedFolderId);
         fetchFolders();
-        fetchStats();
       }
     } catch (error) {
       console.error('Delete error:', error);
@@ -177,7 +146,7 @@ const Files: React.FC = () => {
     try {
       const response = await fetch('/api/v1/folders', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newFolderName.trim() }),
       });
       if (response.ok) {
@@ -195,7 +164,7 @@ const Files: React.FC = () => {
     try {
       const response = await fetch(`/api/v1/folders/${folderId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token()}` },
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       });
       if (response.ok) {
         if (selectedFolderId === folderId) {
@@ -218,7 +187,7 @@ const Files: React.FC = () => {
     try {
       const response = await fetch(`/api/v1/files/${fileId}/share`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json' },
       });
       if (response.ok) {
         const data = await response.json();
@@ -242,7 +211,7 @@ const Files: React.FC = () => {
     try {
       const response = await fetch(`/api/v1/files/${shareFileId}/share-email`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: shareEmail }),
       });
       if (response.ok) {
@@ -337,8 +306,29 @@ const Files: React.FC = () => {
   };
 
   return (
-    <div className="flex gap-6">
-      <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="*/*" />
+    <div className="flex gap-6 relative"
+      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
+    >
+      {dragOver && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
+        >
+          <div className={`rounded-2xl p-12 text-center border-2 border-dashed ${theme === 'dark' ? 'bg-gray-900 border-blue-500' : 'bg-white border-blue-400'}`}>
+            <svg className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            <h3 className={`text-xl font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Drop your file here</h3>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Release to upload</p>
+          </div>
+        </div>
+      )}
+      <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
 
       {/* Folder Sidebar */}
       <aside className={`w-56 shrink-0 rounded-2xl p-4 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
@@ -650,20 +640,5 @@ const Files: React.FC = () => {
     </div>
   );
 };
-
-const MiniStat = ({ theme, label, value, sub, bar }: any) => (
-  <div className={`rounded-xl p-4 ${theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
-    <div className="flex items-center justify-between mb-1">
-      <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{label}</span>
-    </div>
-    <div className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{value}</div>
-    {sub && <div className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{sub}</div>}
-    {bar !== undefined && (
-      <div className={`h-1.5 mt-2 rounded-full ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
-        <div className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500" style={{ width: `${Math.min(bar, 100)}%` }} />
-      </div>
-    )}
-  </div>
-);
 
 export default Files;
