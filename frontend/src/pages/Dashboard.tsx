@@ -207,7 +207,21 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Storage Overview */}
-      {stats && !statsLoading && (
+      {statsLoading ? (
+        <div className={`rounded-2xl p-6 mb-8 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
+          <div className={`h-5 w-40 rounded-md mb-6 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+          <div className={`h-3 w-32 rounded-md mb-3 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+          <div className={`h-3 rounded-full mb-4 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-8">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className={`rounded-xl p-4 ${theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+                <div className={`h-4 w-20 rounded-md mb-2 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                <div className={`h-6 w-16 rounded-md animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : stats && (
         <div className={`rounded-2xl p-6 mb-8 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
           <h2 className={`text-lg font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             Storage Overview

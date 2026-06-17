@@ -477,10 +477,40 @@ const Files: React.FC = () => {
 
         {/* File List */}
         {loading ? (
-          <div className={`rounded-2xl p-12 text-center ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
-            <svg className={`w-8 h-8 mx-auto mb-4 animate-spin ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-            <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading your files...</p>
-          </div>
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className={`rounded-2xl p-5 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
+                  <div className={`w-12 h-12 rounded-xl mb-4 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                  <div className={`h-4 rounded-md mb-2 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} style={{ width: '70%' }} />
+                  <div className={`h-3 rounded-md mb-1 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} style={{ width: '40%' }} />
+                  <div className={`h-3 rounded-md animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} style={{ width: '55%' }} />
+                  <div className="flex gap-2 mt-4">
+                    <div className={`flex-1 h-8 rounded-lg animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                    <div className={`w-14 h-8 rounded-lg animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                    <div className={`w-14 h-8 rounded-lg animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={`flex items-center gap-4 rounded-xl px-5 py-4 ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
+                  <div className={`w-10 h-10 rounded-xl shrink-0 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className={`h-4 rounded-md mb-2 animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} style={{ width: '50%' }} />
+                    <div className={`h-3 rounded-md animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} style={{ width: '35%' }} />
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <div className={`w-16 h-8 rounded-lg animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                    <div className={`w-14 h-8 rounded-lg animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                    <div className={`w-14 h-8 rounded-lg animate-pulse ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : filteredFiles.length === 0 ? (
           <div className={`rounded-2xl p-14 text-center ${theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200 shadow-sm'}`}>
             <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
