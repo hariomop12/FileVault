@@ -55,6 +55,23 @@ const Files: React.FC = () => {
   const [dragOver, setDragOver] = useState(false);
   const dragCounter = useRef(0);
 
+  useEffect(() => {
+    const handleDragEnter = (e: DragEvent) => { e.preventDefault(); dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); };
+    const handleDragOver = (e: DragEvent) => { e.preventDefault(); };
+    const handleDragLeave = (e: DragEvent) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); };
+    const handleDrop = (e: DragEvent) => { e.preventDefault(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer?.files?.[0]; if (file) handleFileUpload(file); };
+    document.addEventListener('dragenter', handleDragEnter);
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('dragleave', handleDragLeave);
+    document.addEventListener('drop', handleDrop);
+    return () => {
+      document.removeEventListener('dragenter', handleDragEnter);
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('dragleave', handleDragLeave);
+      document.removeEventListener('drop', handleDrop);
+    };
+  }, []);
+
   const fetchFiles = useCallback(async (folderId: number | null) => {
     try {
       setLoading(true);
@@ -307,19 +324,9 @@ const Files: React.FC = () => {
   };
 
   return (
-    <div className="flex gap-6 relative"
-      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); }}
-      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); }}
-      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
-    >
+    <div className="flex gap-6 relative">
       {dragOver && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className={`rounded-2xl p-12 text-center border-2 border-dashed ${theme === 'dark' ? 'bg-gray-900 border-blue-500' : 'bg-white border-blue-400'}`}>
             <svg className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
