@@ -55,20 +55,23 @@ const Files: React.FC = () => {
   const [dragOver, setDragOver] = useState(false);
   const dragCounter = useRef(0);
 
+  const dropHandlerRef = useRef<(file: File) => void>(() => {});
+  const updateDropRef = (fn: (file: File) => void) => { dropHandlerRef.current = fn; };
+
   useEffect(() => {
     const handleDragEnter = (e: DragEvent) => { e.preventDefault(); dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); };
     const handleDragOver = (e: DragEvent) => { e.preventDefault(); };
     const handleDragLeave = (e: DragEvent) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); };
-    const handleDrop = (e: DragEvent) => { e.preventDefault(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer?.files?.[0]; if (file) handleFileUpload(file); };
-    document.addEventListener('dragenter', handleDragEnter);
-    document.addEventListener('dragover', handleDragOver);
-    document.addEventListener('dragleave', handleDragLeave);
-    document.addEventListener('drop', handleDrop);
+    const handleDrop = (e: DragEvent) => { e.preventDefault(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer?.files?.[0]; if (file) dropHandlerRef.current(file); };
+    window.addEventListener('dragenter', handleDragEnter);
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('dragleave', handleDragLeave);
+    window.addEventListener('drop', handleDrop);
     return () => {
-      document.removeEventListener('dragenter', handleDragEnter);
-      document.removeEventListener('dragover', handleDragOver);
-      document.removeEventListener('dragleave', handleDragLeave);
-      document.removeEventListener('drop', handleDrop);
+      window.removeEventListener('dragenter', handleDragEnter);
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('dragleave', handleDragLeave);
+      window.removeEventListener('drop', handleDrop);
     };
   }, []);
 
@@ -142,6 +145,7 @@ const Files: React.FC = () => {
     xhr.setRequestHeader('Authorization', `Bearer ${getAuthToken()}`);
     xhr.send(formData);
   };
+  updateDropRef(handleFileUpload);
 
   const handleDeleteFile = async (fileId: number) => {
     if (!window.confirm('Are you sure you want to delete this file?')) return;
