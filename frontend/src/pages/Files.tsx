@@ -59,19 +59,24 @@ const Files: React.FC = () => {
   const updateDropRef = (fn: (file: File) => void) => { dropHandlerRef.current = fn; };
 
   useEffect(() => {
-    const handleDragEnter = (e: Event) => { e.preventDefault(); dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); };
-    const handleDragOver = (e: Event) => { e.preventDefault(); };
-    const handleDragLeave = (e: Event) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); };
-    const handleDrop = (e: Event) => { e.preventDefault(); dragCounter.current = 0; setDragOver(false); const file = (e as DragEvent).dataTransfer?.files?.[0]; if (file) dropHandlerRef.current(file); };
-    window.addEventListener('dragenter', handleDragEnter);
-    window.addEventListener('dragover', handleDragOver);
-    window.addEventListener('dragleave', handleDragLeave);
-    window.addEventListener('drop', handleDrop);
+    const handler = (e: Event) => { e.preventDefault(); if (e.type === 'dragenter') { dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); } else if (e.type === 'dragleave') { dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); } else if (e.type === 'drop') { dragCounter.current = 0; setDragOver(false); const file = (e as DragEvent).dataTransfer?.files?.[0]; if (file) dropHandlerRef.current(file); } };
+    window.addEventListener('dragenter', handler);
+    window.addEventListener('dragover', handler);
+    window.addEventListener('dragleave', handler);
+    window.addEventListener('drop', handler);
+    document.addEventListener('dragenter', handler);
+    document.addEventListener('dragover', handler);
+    document.addEventListener('dragleave', handler);
+    document.addEventListener('drop', handler);
     return () => {
-      window.removeEventListener('dragenter', handleDragEnter);
-      window.removeEventListener('dragover', handleDragOver);
-      window.removeEventListener('dragleave', handleDragLeave);
-      window.removeEventListener('drop', handleDrop);
+      window.removeEventListener('dragenter', handler);
+      window.removeEventListener('dragover', handler);
+      window.removeEventListener('dragleave', handler);
+      window.removeEventListener('drop', handler);
+      document.removeEventListener('dragenter', handler);
+      document.removeEventListener('dragover', handler);
+      document.removeEventListener('dragleave', handler);
+      document.removeEventListener('drop', handler);
     };
   }, []);
 
