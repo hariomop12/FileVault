@@ -56,6 +56,7 @@ const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [dragOver, setDragOver] = useState(false);
+  const dragCounter = useRef(0);
 
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
@@ -135,17 +136,17 @@ const Dashboard: React.FC = () => {
 
   return (
     <div
-      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); }}
       onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
-      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
+      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); }}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
     >
       {dragOver && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
-          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file); }}
         >
           <div className={`rounded-2xl p-12 text-center border-2 border-dashed ${theme === 'dark' ? 'bg-gray-900 border-blue-500' : 'bg-white border-blue-400'}`}>
             <svg className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
