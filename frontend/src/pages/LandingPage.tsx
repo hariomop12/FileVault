@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import DarkModeToggle from '../components/ui/DarkModeToggle';
 
+const API_BASE = process.env.REACT_APP_API_URL || 'https://file-vault-backend-g5102.sevalla.app';
+
 const LandingPage: React.FC = () => {
   const [downloadId, setDownloadId] = useState('');
   const [downloadKey, setDownloadKey] = useState('');
@@ -15,7 +17,7 @@ const LandingPage: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:3000/api/v1/files/upload', {
+      const response = await fetch(`${API_BASE}/api/v1/files/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -70,7 +72,7 @@ const LandingPage: React.FC = () => {
     }
     try {
       setIsDownloading(true);
-      const response = await fetch('http://localhost:3000/api/v1/files/download', {
+      const response = await fetch(`${API_BASE}/api/v1/files/download`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_id: downloadId, secret_key: downloadKey }),
