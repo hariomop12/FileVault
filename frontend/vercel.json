@@ -1,6 +1,9 @@
 {
   "outputDirectory": "build",
   "buildCommand": "CI=false pnpm run build",
-  "installCommand": "pnpm install"
+  "installCommand": "pnpm install",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://file-vault-backend-g5102.sevalla.app/api/$1" }
+  ]
 }
 
