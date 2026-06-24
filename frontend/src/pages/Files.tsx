@@ -58,28 +58,6 @@ const Files: React.FC = () => {
   const dropHandlerRef = useRef<(file: File) => void>(() => {});
   const updateDropRef = (fn: (file: File) => void) => { dropHandlerRef.current = fn; };
 
-  useEffect(() => {
-    const handler = (e: Event) => { e.preventDefault(); if (e.type === 'dragenter') { dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); } else if (e.type === 'dragleave') { dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); } else if (e.type === 'drop') { dragCounter.current = 0; setDragOver(false); const file = (e as DragEvent).dataTransfer?.files?.[0]; if (file) dropHandlerRef.current(file); } };
-    window.addEventListener('dragenter', handler);
-    window.addEventListener('dragover', handler);
-    window.addEventListener('dragleave', handler);
-    window.addEventListener('drop', handler);
-    document.addEventListener('dragenter', handler);
-    document.addEventListener('dragover', handler);
-    document.addEventListener('dragleave', handler);
-    document.addEventListener('drop', handler);
-    return () => {
-      window.removeEventListener('dragenter', handler);
-      window.removeEventListener('dragover', handler);
-      window.removeEventListener('dragleave', handler);
-      window.removeEventListener('drop', handler);
-      document.removeEventListener('dragenter', handler);
-      document.removeEventListener('dragover', handler);
-      document.removeEventListener('dragleave', handler);
-      document.removeEventListener('drop', handler);
-    };
-  }, []);
-
   const fetchFiles = useCallback(async (folderId: number | null) => {
     try {
       setLoading(true);
@@ -334,17 +312,26 @@ const Files: React.FC = () => {
 
   return (
     <div className="flex gap-6 relative">
-      {dragOver && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className={`rounded-2xl p-12 text-center border-2 border-dashed ${theme === 'dark' ? 'bg-gray-900 border-blue-500' : 'bg-white border-blue-400'}`}>
-            <svg className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            <h3 className={`text-xl font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Drop your file here</h3>
-            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Release to upload</p>
+      <div
+        className="fixed inset-0 z-40"
+        style={{ pointerEvents: dragOver ? 'auto' : 'none' }}
+        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (dragCounter.current === 1) setDragOver(true); }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setDragOver(false); }}
+        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current = 0; setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) dropHandlerRef.current(file); }}
+      >
+        {dragOver && (
+          <div className="w-full h-full flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className={`rounded-2xl p-12 text-center border-2 border-dashed ${theme === 'dark' ? 'bg-gray-900 border-blue-500' : 'bg-white border-blue-400'}`}>
+              <svg className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              <h3 className={`text-xl font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Drop your file here</h3>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Release to upload</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
 
       {/* Folder Sidebar */}
