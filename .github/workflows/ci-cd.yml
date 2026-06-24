@@ -16,9 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 9
 
       - uses: actions/setup-node@v4
         with:
@@ -73,18 +73,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 9
 
       - uses: actions/setup-node@v4
         with:
           node-version: 18
 
+      - name: Install backend deps for audit
+        run: |
+          cd backend
+          pnpm install --frozen-lockfile
+        continue-on-error: true
+
       - name: Audit backend
         run: |
           cd backend
           pnpm audit --audit-level=high || echo "Security vulnerabilities found, please review"
+        continue-on-error: true
+
+      - name: Install frontend deps for audit
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
         continue-on-error: true
 
       - name: Audit frontend
