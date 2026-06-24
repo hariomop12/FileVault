@@ -60,12 +60,9 @@ jobs:
       - name: Build backend Docker image
         run: docker build -f Dockerfile.dev -t filevault-backend:latest .
 
-      - name: Build frontend Docker image
-        run: docker build -f frontend/Dockerfile.dev -t filevault-frontend:latest ./frontend
-
-      - name: Verify Docker images
+      - name: Verify Docker image
         run: |
-          docker images --filter "reference=filevault-*" --format "{{.Repository}}:{{.Tag}}"
+          docker images --filter "reference=filevault-backend" --format "{{.Repository}}:{{.Tag}}"
 
   security:
     name: Security Scan
