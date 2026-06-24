@@ -1,0 +1,6 @@
+{
+  "outputDirectory": "build",
+  "buildCommand": "CI=false pnpm run build",
+  "installCommand": "pnpm install"
+}
+
