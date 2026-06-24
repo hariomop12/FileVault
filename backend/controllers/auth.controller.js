@@ -41,15 +41,18 @@ const AuthController = {
         return res.status(400).json(result);
       }
 
+      const jwt = require("jsonwebtoken");
+      const token = jwt.sign(
+        { id: result.user.id, email: result.user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: "24h" }
+      );
+
       res.status(201).json({
         success: true,
-        message:
-          "Registration successful! Please check your email to verify your account.",
+        message: "Registration successful!",
         user: result.user,
-        // Only include token in development for testing
-        ...(process.env.NODE_ENV === "development" && {
-          verificationToken: result.verificationToken,
-        }),
+        token,
       });
     } catch (error) {
       logger.error(`Register Controller Error: ${error.message}`);

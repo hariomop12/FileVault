@@ -42,9 +42,9 @@ const AuthService = {
       // Generate verification token
       const verificationToken = crypto.randomBytes(32).toString("hex");
 
-      // Insert user into database
+      // Insert user into database (email_verified = true — no email verification required)
       const result = await query(
-        "INSERT INTO filevault_users (name, email, password, verification_token) VALUES ($1, $2, $3, $4) RETURNING *",
+        "INSERT INTO filevault_users (name, email, password, verification_token, email_verified) VALUES ($1, $2, $3, $4, true) RETURNING *",
         [name, email, hashedPassword, verificationToken]
       );
 
@@ -152,14 +152,6 @@ const AuthService = {
 
       const user = result.rows[0];
       console.log(`User found. Email verified: ${user.email_verified}`);
-
-      // Check if email is verified
-      if (!user.email_verified) {
-        return {
-          error: "Please verify your email before logging in",
-          detail: "Email verification required",
-        };
-      }
 
       // Check password
       const isMatch = await bcrypt.compare(password, user.password);
