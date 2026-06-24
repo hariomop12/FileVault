@@ -25,10 +25,10 @@ const apiLimiter = rateLimit({
   keyGenerator: (req) => req.ip || req.headers["x-forwarded-for"] || "unknown",
 });
 
-// Authentication endpoints limiter (more strict: 10 requests per 15 minutes)
+// Authentication endpoints limiter
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // max 10 auth attempts per windowMs
+  max: 100, // max 100 auth attempts per windowMs
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitExceededHandler,
