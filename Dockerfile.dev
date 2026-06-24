@@ -11,13 +11,13 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g pnpm
 
 # Copy package files for better caching
-COPY package.json pnpm-lock.yaml ./
+COPY backend/package.json backend/pnpm-lock.yaml ./
 
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
 # Copy source code
-COPY . .
+COPY backend/ .
 
 # Create logs directory
 RUN mkdir -p logs

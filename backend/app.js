@@ -4,6 +4,7 @@ const fileRoutes = require("./routes/file.routes");
 const authRoutes = require("./routes/auth.routes");
 const userFileRoutes = require("./routes/userFile.routes");
 const folderRoutes = require("./routes/folder.routes");
+const healthRoutes = require("./routes/health.routes");
 const cors = require("cors");
 const helmet = require("helmet");
 const compression = require('compression');
@@ -68,9 +69,18 @@ app.get("/", (req, res) => {
  *                   type: number
  *                   description: Server uptime in seconds
  */
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "UP",
+app.get("/health", async (req, res) => {
+  const { testConnection } = require("./config/db");
+  let dbStatus = "UP";
+  try {
+    const dbOk = await testConnection();
+    if (!dbOk) dbStatus = "DOWN";
+  } catch {
+    dbStatus = "DOWN";
+  }
+  res.status(dbStatus === "UP" ? 200 : 503).json({
+    status: dbStatus === "UP" ? "UP" : "DEGRADED",
+    database: dbStatus,
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
@@ -95,6 +105,7 @@ app.use("/api/v1/files", fileRoutes);  // Anonymous file routes (no auth)
 app.use("/api/v1/auth", authLimiter, authRoutes);  // Auth routes (signup, login, etc.)
 app.use("/api/v1", userFileRoutes);  // Authenticated user routes (requires auth)
 app.use("/api/v1", folderRoutes);  // Folder routes
+app.use("/api/v1", healthRoutes);  // Health & Test routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {
