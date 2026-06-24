@@ -100,12 +100,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   }
 }));
 
-// Routes - Order matters! Auth routes must come before authenticated routes
+// Routes - Order matters!
 app.use("/api/v1/files", fileRoutes);  // Anonymous file routes (no auth)
 app.use("/api/v1/auth", authLimiter, authRoutes);  // Auth routes (signup, login, etc.)
+app.use("/api/v1", healthRoutes);  // Health & Test routes (no auth, must be before auth-protected routes)
 app.use("/api/v1", userFileRoutes);  // Authenticated user routes (requires auth)
 app.use("/api/v1", folderRoutes);  // Folder routes
-app.use("/api/v1", healthRoutes);  // Health & Test routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {
