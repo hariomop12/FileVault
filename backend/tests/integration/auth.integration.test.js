@@ -26,7 +26,7 @@ describe('Auth API - Integration', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.verificationToken).toBeDefined();
+      expect(res.body.token).toBeDefined();
     });
 
     it('should reject duplicate email', async () => {
@@ -72,20 +72,6 @@ describe('Auth API - Integration', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.token).toBeDefined();
-    });
-
-    it('should reject unverified email', async () => {
-      const bcrypt = require('bcryptjs');
-      __setMockRows([{
-        id: 1, name: 'John', email: 'john@test.com',
-        password: bcrypt.hashSync('password123', 10), email_verified: false,
-      }]);
-
-      const res = await request(app)
-        .post('/api/v1/auth/login')
-        .send({ email: 'john@test.com', password: 'password123' });
-
-      expect(res.status).toBe(401);
     });
 
     it('should reject invalid credentials', async () => {

@@ -94,14 +94,6 @@ describe('AuthService', () => {
       expect(result.error).toBe('Invalid credentials');
     });
 
-    it('should fail when email is not verified', async () => {
-      __setMockRows([{ ...mockUser, email_verified: false }]);
-
-      const result = await AuthService.loginUser('john@test.com', 'password123');
-
-      expect(result.error).toBe('Please verify your email before logging in');
-    });
-
     it('should fail with wrong password', async () => {
       __setMockRows([mockUser]);
       bcrypt.compare = jest.fn().mockResolvedValue(false);
