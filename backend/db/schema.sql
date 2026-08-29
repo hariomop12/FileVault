@@ -504,6 +504,51 @@ ALTER TABLE ONLY public.filevault_shared_links
 
 
 --
+-- Name: storage_nodes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.storage_nodes (
+    id integer NOT NULL,
+    name text NOT NULL,
+    endpoint text,
+    type text DEFAULT 'LOCAL'::text,
+    status text DEFAULT 'ACTIVE'::text,
+    capacity_bytes bigint DEFAULT 0,
+    used_bytes bigint DEFAULT 0,
+    replication_weight integer DEFAULT 1,
+    last_heartbeat_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: storage_nodes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.storage_nodes_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.storage_nodes_id_seq OWNED BY public.storage_nodes.id;
+
+ALTER TABLE ONLY public.storage_nodes ALTER COLUMN id SET DEFAULT nextval('public.storage_nodes_id_seq'::regclass);
+
+ALTER TABLE ONLY public.storage_nodes
+    ADD CONSTRAINT storage_nodes_name_key UNIQUE (name);
+
+ALTER TABLE ONLY public.storage_nodes
+    ADD CONSTRAINT storage_nodes_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_storage_nodes_status ON public.storage_nodes USING btree (status);
+CREATE INDEX idx_storage_nodes_type ON public.storage_nodes USING btree (type);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -525,4 +570,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250318192934'),
     ('20250329090345'),
     ('20250329102628'),
-    ('20250615000001');
+    ('20250615000001'),
+    ('20250829120000'),
+    ('20250829130000');

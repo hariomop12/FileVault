@@ -1,0 +1,5 @@
+allowBuilds:
+  '@scarf/scarf': true
+  bcrypt: true
+  es5-ext: true
+  msgpackr-extract: true
