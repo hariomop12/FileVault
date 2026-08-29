@@ -17,9 +17,11 @@ const poolConfig = {
     port: process.env.DB_PORT,
     database: process.env.DB_DATABASE,
   }),
-  connectionTimeoutMillis: 30000,
-  idleTimeoutMillis: 60000,
-  max: 20,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  // Cap the pool below the plan's max_connections so background jobs and
+  // admin tools always have headroom (Aiven hobby = 20).
+  max: parseInt(process.env.PG_MAX_POOL || "10", 10),
   keepAlive: true
 };
 
@@ -73,8 +75,9 @@ const query = async (text, params) => {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log(`✅ Executed query: ${text}, Duration: ${duration}ms`);
+    if (process.env.DEBUG_QUERIES === "1") {
+      logger.info(`DB QUERY: ${text} (${Date.now() - start}ms)`);
+    }
     return res;
   } catch (err) {
     logger.error(`❌ Query Failed: ${text}, Error: ${err.message}`, { stack: err.stack });
