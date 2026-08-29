@@ -37,10 +37,10 @@ const StatCard = ({ icon, label, value, sub, color, theme }: any) => (
       </div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{label}</p>
-        <p className={`text-2xl font-bold mt-0.5 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`text-2xl font-bold mt-0.5 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           {value}
-        </p>
-        {sub && <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{sub}</p>}
+        </div>
+        {sub && <div className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{sub}</div>}
       </div>
     </div>
   </div>
