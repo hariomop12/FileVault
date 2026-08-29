@@ -11,6 +11,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Files from './pages/Files';
 import Settings from './pages/Settings';
+import AdminNodes from './pages/admin/AdminNodes';
+import AdminReplication from './pages/admin/AdminReplication';
 
 // Import layout components
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -57,6 +59,28 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <Settings />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin routes (role-gated) */}
+            <Route
+              path="/admin/nodes"
+              element={
+                <ProtectedRoute role="ADMIN">
+                  <Layout>
+                    <AdminNodes />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/replication"
+              element={
+                <ProtectedRoute role="ADMIN">
+                  <Layout>
+                    <AdminReplication />
                   </Layout>
                 </ProtectedRoute>
               }
