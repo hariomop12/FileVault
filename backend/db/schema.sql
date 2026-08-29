@@ -549,6 +549,47 @@ CREATE INDEX idx_storage_nodes_type ON public.storage_nodes USING btree (type);
 
 
 --
+-- Name: multipart_uploads; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.multipart_uploads (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    s3_key text NOT NULL,
+    upload_id text NOT NULL,
+    filename text NOT NULL,
+    content_type text,
+    total_size bigint DEFAULT 0,
+    part_size integer NOT NULL,
+    total_parts integer NOT NULL DEFAULT 0,
+    status text DEFAULT 'PENDING'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.multipart_uploads_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.multipart_uploads_id_seq OWNED BY public.multipart_uploads.id;
+
+ALTER TABLE ONLY public.multipart_uploads ALTER COLUMN id SET DEFAULT nextval('public.multipart_uploads_id_seq'::regclass);
+
+ALTER TABLE ONLY public.multipart_uploads
+    ADD CONSTRAINT multipart_uploads_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.multipart_uploads
+    ADD CONSTRAINT multipart_uploads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.filevault_users(id) ON DELETE CASCADE;
+
+CREATE INDEX idx_multipart_user ON public.multipart_uploads USING btree (user_id);
+CREATE INDEX idx_multipart_upload_id ON public.multipart_uploads USING btree (upload_id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -572,4 +613,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250329102628'),
     ('20250615000001'),
     ('20250829120000'),
-    ('20250829130000');
+    ('20250829130000'),
+    ('20250829140000');

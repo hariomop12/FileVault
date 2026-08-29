@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { fileService } from '../services/files';
 
 interface FileItem {
   id: number;
@@ -101,6 +102,27 @@ const Files: React.FC = () => {
   const handleFileUpload = (file: File) => {
     setUploading(true);
     setUploadProgress(0);
+
+    const done = () => {
+      setUploading(false);
+      setUploadProgress(0);
+      fetchFiles(selectedFolderId);
+    };
+
+    // Large files -> resumable chunked multipart upload (progress via slices)
+    if (file.size > 5 * 1024 * 1024) {
+      fileService
+        .multipartUpload(file, setUploadProgress)
+        .then(done)
+        .catch(() => {
+          setUploading(false);
+          setUploadProgress(0);
+          alert('Multipart upload failed. Please try again.');
+        });
+      return;
+    }
+
+    // Small files -> single request (existing XHR path)
     const formData = new FormData();
     formData.append('file', file);
     const xhr = new XMLHttpRequest();

@@ -5,6 +5,7 @@ const authRoutes = require("./routes/auth.routes");
 const userFileRoutes = require("./routes/userFile.routes");
 const folderRoutes = require("./routes/folder.routes");
 const adminRoutes = require("./routes/admin.routes");
+const multipartRoutes = require("./routes/multipart.routes");
 const healthRoutes = require("./routes/health.routes");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -108,6 +109,7 @@ app.use("/api/v1", healthRoutes);  // Health & Test routes (no auth, must be bef
 app.use("/api/v1", userFileRoutes);  // Authenticated user routes (requires auth)
 app.use("/api/v1", folderRoutes);  // Folder routes
 app.use("/api/v1/admin", adminRoutes);  // Admin-only routes (RBAC)
+app.use("/api/v1/user/files/multipart", multipartRoutes);  // Multipart upload (auth)
 
 // Error handling middleware
 app.use((err, req, res, next) => {
