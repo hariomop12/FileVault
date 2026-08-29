@@ -1,4 +1,5 @@
 const MultipartService = require("../services/multipart.service");
+const { fileUploadCounter } = require("../utils/monitoring");
 
 const MultipartController = {
   initiate: async (req, res) => {
@@ -56,10 +57,13 @@ const MultipartController = {
         parts,
       });
       if (result.error) {
+        fileUploadCounter.inc({ status: "failure" });
         return res.status(400).json({ success: false, message: result.error });
       }
+      fileUploadCounter.inc({ status: "success" });
       return res.status(200).json({ success: true, data: result });
     } catch (error) {
+      fileUploadCounter.inc({ status: "failure" });
       return res.status(500).json({ success: false, message: "Failed to complete upload" });
     }
   },

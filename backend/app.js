@@ -7,12 +7,14 @@ const folderRoutes = require("./routes/folder.routes");
 const adminRoutes = require("./routes/admin.routes");
 const multipartRoutes = require("./routes/multipart.routes");
 const healthRoutes = require("./routes/health.routes");
+const metricsRoutes = require("./routes/metrics.routes");
 const cors = require("cors");
 const helmet = require("helmet");
 const compression = require('compression');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./config/swagger');
 const { apiLimiter, authLimiter } = require("./middlewares/rateLimiting.middleware");
+const { httpMetricsMiddleware } = require("./utils/monitoring");
 
 // Load env variables
 dotenv.config();
@@ -25,6 +27,7 @@ app.use(express.json());
 app.use(helmet());
 app.use(cors());
 app.use(compression());
+app.use(httpMetricsMiddleware)
 
 /**
  * @swagger
@@ -110,6 +113,7 @@ app.use("/api/v1", userFileRoutes);  // Authenticated user routes (requires auth
 app.use("/api/v1", folderRoutes);  // Folder routes
 app.use("/api/v1/admin", adminRoutes);  // Admin-only routes (RBAC)
 app.use("/api/v1/user/files/multipart", multipartRoutes);  // Multipart upload (auth)
+app.use("/metrics", metricsRoutes);  // Prometheus metrics scrape endpoint
 
 // Error handling middleware
 app.use((err, req, res, next) => {

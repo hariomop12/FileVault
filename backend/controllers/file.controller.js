@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const multer = require("multer");
 const FileService = require("../services/file.service");
 const logger = require("../utils/logger");
+const { fileUploadCounter, fileDownloadCounter, bytesUploadedTotal } = require("../utils/monitoring");
 const { FILE_SIZE_LIMIT } = require("../middlewares/validation.middleware");
 const LocalStorageService = require("../services/localStorage.service");
 
@@ -109,8 +110,11 @@ exports.uploadFile = async (req, res) => {
       file_name: file.originalname,
       url: fileUrl
     };
+    fileUploadCounter.inc({ status: "success" });
+    bytesUploadedTotal.inc(file.size);
     sendResponse(res, 201, true, "File uploaded successfully", result);
   } catch (error) {
+    fileUploadCounter.inc({ status: "failure" });
     return handleControllerError(error, "upload file", res);
   }
 };
@@ -153,7 +157,9 @@ exports.downloadFile = async (req, res) => {
         url: signedUrl,
       },
     });
+    fileDownloadCounter.inc({ status: "success" });
   } catch (error) {
+    fileDownloadCounter.inc({ status: "failure" });
     console.error("Download Error:", error);
     res.status(500).json({ error: "Download failed", message: error.message });
   }
@@ -176,12 +182,16 @@ const UserFileController = {
       const userId = req.user.id;
       const result = await FileService.uploadUsersFile(file, userId);
 
+      fileUploadCounter.inc({ status: "success" });
+      bytesUploadedTotal.inc(file.size);
+
       res.status(201).json({
         success: true,
         message: "File uploaded successfully",
         data: result,
       });
     } catch (error) {
+      fileUploadCounter.inc({ status: "failure" });
       return handleControllerError(error, "upload file", res);
     }
   },
@@ -242,17 +252,20 @@ const UserFileController = {
       const result = await FileService.getDownloadLink(fileId, userId);
 
       if (result.error) {
+        fileDownloadCounter.inc({ status: "failure" });
         return res.status(404).json({
           success: false,
           message: result.error,
         });
       }
 
+      fileDownloadCounter.inc({ status: "success" });
       res.status(200).json({
         success: true,
         data: result,
       });
     } catch (error) {
+      fileDownloadCounter.inc({ status: "failure" });
       logger.error(`❌ Download link controller error: ${error.message}`);
       res
         .status(500)
