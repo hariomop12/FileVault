@@ -45,7 +45,7 @@ export function setup() {
 
 export default function (data) {
   token = token || data;
-  const payload = http.file(new Uint8Array(UP_BYTES), FILE_NAME, 'application/octet-stream');
+  const payload = http.file(new Uint8Array(UP_BYTES).buffer, FILE_NAME, 'application/octet-stream');
   const body = { file: payload };
 
   const started = Date.now();
