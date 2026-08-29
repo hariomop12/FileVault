@@ -394,3 +394,47 @@ Chhotta, complete, defendable >> bada, half-done, shaky.
 
 **→ ACTION (scope-locked): Implement Steps 5→6→2→1→3→4→7→8 → write tests →
 update resume (Section 5) → call it DONE. Tai. 🛑**
+
+---
+
+# 🧹 POLISH PASS — Top 5 (final, after production deploy + load test)
+
+> State: **prod LIVE** (`filevault.hariomop.in`, EC2 + pm2 + nginx + TLS),
+> CI/CD wired (GH Actions → webhook → pm2), 174 tests / 23 suites,
+> k6 numbers captured (235 req/s, p95 92ms, 0% errors; upload ~7 MB/s).
+> Ab baki hai **polish** — code cleanliness, prod data hygiene, honest distributed story,
+> docs accuracy, aur ek final green regression. **Order me 1→5 karna hai.**
+
+## 1. API surface clean-up (interview: pehla impression)
+- [ ] Rename `uploadFilee` → `uploadFile` (route + controller + tests)
+- [ ] Unify error shape: sab jagah `{ success: false, message }` (ab kuch `{ error }` hain)
+- [ ] Duplicate-email signup: `400` → `409 Conflict` (frontend already handles both)
+- [ ] Frontend `auth.ts` / stray `console.log`s hatao (startup info allowed only in server.js)
+- [ ] `npm run lint` + `npm test` green
+
+## 2. Prod data clean-up (demo hygiene)
+- [ ] k6 test files (~10×5MB, R2 + DB) delete via API (k6@filevault.hariomop.in session)
+- [ ] Remove test signups (`test-signup-400@example.com`, id=30, etc.)
+- [ ] Run replication reconcile → 43 stale `file_replicas` → consistent
+- [ ] Verify `/api/v1/files` empty/sane + `GET /storage` shows correct usage
+
+## 3. Storage-node story ko coherent banao (honesty)
+- [ ] Decide: register REAL extra nodes (local dirs on box) ya phantoms ko rename/mark
+- [ ] `storage_nodes` registry cleanup (names/types match reality)
+- [ ] `file_replicas` placement matches live ACTIVE nodes
+- [ ] `/api/v1/test` + `/api/v1/admin/nodes/health` output = coherent story (no "mystery" nodes)
+
+## 4. Docs = final state (interview-defensible)
+- [ ] `docs/DEPLOY_EC2.md` sync: PG_MAX_POOL, HEARTBEAT_NODE_ID, node R2-type fix,
+      certbot, webhook token flow, deploy.sh steps, stale-loopback notes
+- [ ] README quick-start verify against `backend/.env.example`
+- [ ] EXPLAIN.md numbers match current code (174 tests, metrics)
+
+## 5. Final regression pass (proof of "as-of-today works")
+- [ ] Push → GitHub Actions green (test 174 + frontend TS build + deploy)
+- [ ] k6 sanity run (small iterations) — numbers stable
+- [ ] `/api-docs`, `/metrics`, `/api/v1/test` all 200 live
+- [ ] `filevault.hariomop.in` + backend + Vercel mirror: smoke test pass
+
+**DONE criteria:** code clean (lint), prod data tidy, nodes story honest,
+docs match reality, ek akhri green CI run recorded.
