@@ -151,8 +151,8 @@ const LandingPage: React.FC = () => {
             <span className="gradient-text">File Storage</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8 leading-relaxed">
-            Upload, store, and share your files securely with enterprise-grade encryption.
-            No registration required for anonymous uploads.
+            Upload, store, and share your files on a self-healing, CDN-backed storage
+            cluster. No registration required for anonymous uploads.
           </p>
 
           <div className="flex items-center justify-center gap-4">
@@ -296,7 +296,7 @@ const LandingPage: React.FC = () => {
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                 </svg>
-                Encrypted & secure
+                Backed by Cloudflare R2
               </p>
             </div>
           </div>
@@ -321,11 +321,11 @@ const LandingPage: React.FC = () => {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: '🔒', title: 'End-to-End Encryption', desc: 'Your files are encrypted before upload and decrypted only when you download them.' },
-              { icon: '☁️', title: 'Cloudflare R2 Storage', desc: 'Lightning-fast global CDN with zero egress fees and 99.9% uptime.' },
+              { icon: '☁️', title: 'Cloudflare R2 Storage', desc: 'Globally distributed object storage with zero egress fees and 99.9% availability.' },
+              { icon: '🛡️', title: 'Self-Healing Replication', desc: 'Every file lives on multiple storage nodes. When a node fails, copies are rebuilt automatically.' },
               { icon: '👤', title: 'Anonymous Uploads', desc: 'No registration required. Upload instantly and share securely.' },
               { icon: '📊', title: 'Smart File Management', desc: 'Organize, preview, and manage your files with an intuitive dashboard.' },
-              { icon: '🚀', title: 'Lightning Fast', desc: 'Blazing speeds with optimized infrastructure and global CDN.' },
+              { icon: '⚡', title: 'Global CDN Delivery', desc: 'Files stream straight from the edge via Cloudflare\'s global network.' },
               { icon: '🔗', title: 'Shareable Links', desc: 'Generate secure, time-limited links to share files with anyone.' },
             ].map((feature, i) => (
               <div key={i} className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 card-hover animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
@@ -347,7 +347,7 @@ const LandingPage: React.FC = () => {
             {[
               { value: '10K+', label: 'Files Uploaded' },
               { value: '99.9%', label: 'Uptime' },
-              { value: '256-bit', label: 'Encryption' },
+              { value: '3x', label: 'Replication Factor' },
             ].map((stat, i) => (
               <div key={i} className="text-center animate-fade-in-up" style={{ animationDelay: `${i * 150}ms` }}>
                 <div className="text-4xl md:text-5xl font-extrabold gradient-text mb-2">{stat.value}</div>
