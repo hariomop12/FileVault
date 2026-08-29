@@ -21,10 +21,12 @@ git -C "$APP_DIR" fetch --quiet --all || true
 git -C "$APP_DIR" reset --hard --quiet origin/main
 
 log "backend: install"
-( cd "$APP_DIR/backend" && pnpm install --frozen-lockfile 2>/dev/null || pnpm install --silent )
+( cd "$APP_DIR/backend" && (pnpm install --frozen-lockfile 2>/dev/null || pnpm install --silent) ) || \
+( cd "$APP_DIR/backend" && npm install --legacy-peer-deps --no-audit --no-fund --silent )
 
 log "frontend: install + build"
-( cd "$APP_DIR/frontend" && pnpm install --silent && CI=true pnpm run build >/dev/null )
+( cd "$APP_DIR/frontend" && ( (pnpm install --silent && CI=true pnpm run build) >/dev/null ) ) || \
+( cd "$APP_DIR/frontend" && npm install --legacy-peer-deps --no-audit --no-fund --silent && CI=true npm run build >/dev/null )
 
 log "pm2 reload backend"
 pm2 reload filevault-backend --update-env || pm2 start "$APP_DIR/deploy/ec2/ecosystem.config.js" --env production
