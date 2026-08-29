@@ -1,0 +1,16 @@
+[Unit]
+Description=FileVault GitHub deploy webhook
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/filevault/app
+Environment=DEPLOY_TOKEN=change-me
+Environment=DEPLOY_PORT=9000
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/node /opt/filevault/app/deploy/ec2/webhook.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

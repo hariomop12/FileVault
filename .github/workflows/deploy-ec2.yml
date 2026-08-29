@@ -1,0 +1,60 @@
+name: Deploy to EC2 (webhook)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-and-build:
+    name: Test + Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+
+      - name: Backend deps
+        run: pnpm install --frozen-lockfile
+        working-directory: ./backend
+
+      - name: Backend tests
+        run: pnpm test
+        working-directory: ./backend
+
+      - name: Frontend deps
+        run: pnpm install --frozen-lockfile
+        working-directory: ./frontend
+
+      - name: Frontend build
+        run: CI=true pnpm run build
+        working-directory: ./frontend
+
+  deploy:
+    name: Deploy to EC2
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trigger PM2 webhook deploy
+        run: |
+          for i in $(seq 1 3); do
+            CODE=$(curl -s -o /tmp/deploy_resp -w '%{http_code}' -X POST \
+              "${{ secrets.EC2_WEBHOOK_URL }}" \
+              -H "X-Deploy-Token: ${{ secrets.EC2_WEBHOOK_TOKEN }}" \
+              --max-time 15 || true)
+            echo "attempt $i -> HTTP $CODE"
+            [ "$CODE" = "202" ] && cat /tmp/deploy_resp && exit 0
+            sleep 10
+          done
+          echo "webhook did not accept deploy" && cat /tmp/deploy_resp && exit 1
