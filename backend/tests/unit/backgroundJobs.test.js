@@ -2,6 +2,7 @@ jest.mock('../../utils/logger');
 jest.mock('../../services/storageNode.service', () => ({
   getNodeHeartbeatState: jest.fn(),
   updateNodeStatus: jest.fn(),
+  recordHeartbeat: jest.fn(),
 }));
 jest.mock('../../services/replication.service', () => ({
   reconcileAll: jest.fn(),
@@ -11,6 +12,9 @@ const {
   evaluateNodeHealth,
   scanAndMarkDown,
   runReplicator,
+  startInstanceHeartbeat,
+  stopInstanceHeartbeat,
+  INSTANCE_HEARTBEAT_INTERVAL_MS,
   SUSPICION_TIMEOUT_MS,
   FAILSAFE_TIMEOUT_MS,
 } = require('../../utils/backgroundJobs');
@@ -119,6 +123,35 @@ describe('backgroundJobs (heartbeat / failure detection)', () => {
       ReplicationService.reconcileAll.mockRejectedValue(new Error('boom'));
 
       await expect(runReplicator()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('startInstanceHeartbeat', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => { stopInstanceHeartbeat(); jest.useRealTimers(); });
+
+    it('beats immediately on start and keeps beating under the suspicion window', () => {
+      StorageNodeService.recordHeartbeat.mockResolvedValue({ node: { id: 1 } });
+
+      startInstanceHeartbeat(1, 15000);
+      expect(StorageNodeService.recordHeartbeat).toHaveBeenCalledWith(1);
+
+      jest.advanceTimersByTime(15000);
+      expect(StorageNodeService.recordHeartbeat).toHaveBeenCalledTimes(2);
+
+      jest.advanceTimersByTime(15000);
+      expect(StorageNodeService.recordHeartbeat).toHaveBeenCalledTimes(3);
+      expect(15000).toBeLessThan(SUSPICION_TIMEOUT_MS);
+    });
+
+    it('logs without throwing when the node is missing', async () => {
+      StorageNodeService.recordHeartbeat.mockResolvedValue(null);
+      await expect(require('../../utils/backgroundJobs').sendInstanceHeartbeat(99))
+        .resolves.toBeUndefined();
+    });
+
+    it('rejects a bogus node id', () => {
+      expect(() => startInstanceHeartbeat('x')).toThrow(/Invalid node id/);
     });
   });
 });

@@ -6,6 +6,7 @@ const SUSPICION_TIMEOUT_MS = 30 * 1000;
 const FAILSAFE_TIMEOUT_MS = 90 * 1000;
 const SCAN_INTERVAL_MS = 10 * 1000;
 const REPLICATOR_INTERVAL_MS = 30 * 1000;
+const INSTANCE_HEARTBEAT_INTERVAL_MS = 15 * 1000;
 
 function evaluateNodeHealth(status, lastHeartbeatAt, now = Date.now()) {
   const ageMs = lastHeartbeatAt ? now - new Date(lastHeartbeatAt).getTime() : Infinity;
@@ -62,6 +63,38 @@ function stopHeartbeatMonitor() {
   }
 }
 
+let instanceHeartbeatTimer = null;
+
+async function sendInstanceHeartbeat(nodeId) {
+  try {
+    const result = await StorageNodeService.recordHeartbeat(nodeId);
+    if (!result) {
+      logger.warn(`Auto-heartbeat: storage node ${nodeId} not found`);
+    }
+  } catch (error) {
+    logger.error("Auto-heartbeat failed", { error: error.message });
+  }
+}
+
+function startInstanceHeartbeat(nodeId, intervalMs = INSTANCE_HEARTBEAT_INTERVAL_MS) {
+  if (!Number.isInteger(nodeId) || nodeId <= 0) {
+    throw new Error(`Invalid node id for instance heartbeat: ${nodeId}`);
+  }
+  if (instanceHeartbeatTimer) return instanceHeartbeatTimer;
+  instanceHeartbeatTimer = setInterval(() => sendInstanceHeartbeat(nodeId), intervalMs);
+  if (instanceHeartbeatTimer.unref) instanceHeartbeatTimer.unref();
+  logger.info(`Instance auto-heartbeat started for node ${nodeId} (every ${intervalMs}ms)`);
+  sendInstanceHeartbeat(nodeId);
+  return instanceHeartbeatTimer;
+}
+
+function stopInstanceHeartbeat() {
+  if (instanceHeartbeatTimer) {
+    clearInterval(instanceHeartbeatTimer);
+    instanceHeartbeatTimer = null;
+  }
+}
+
 async function runReplicator() {
   try {
     const result = await ReplicationService.reconcileAll();
@@ -99,6 +132,10 @@ module.exports = {
   scanAndMarkDown,
   startHeartbeatMonitor,
   stopHeartbeatMonitor,
+  sendInstanceHeartbeat,
+  startInstanceHeartbeat,
+  stopInstanceHeartbeat,
+  INSTANCE_HEARTBEAT_INTERVAL_MS,
   runReplicator,
   startReplicator,
   stopReplicator,

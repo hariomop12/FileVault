@@ -35,6 +35,17 @@ async function startServer() {
     startHeartbeatMonitor();
   }
 
+  // Keep this instance's storage node alive (configured via HEARTBEAT_NODE_ID)
+  if (process.env.HEARTBEAT_NODE_ID) {
+    const { startInstanceHeartbeat } = require('./utils/backgroundJobs');
+    const nodeId = parseInt(process.env.HEARTBEAT_NODE_ID, 10);
+    if (Number.isInteger(nodeId) && nodeId > 0) {
+      startInstanceHeartbeat(nodeId);
+    } else {
+      logger.warn('Ignoring invalid HEARTBEAT_NODE_ID', { value: process.env.HEARTBEAT_NODE_ID });
+    }
+  }
+
   // Start self-healing replicator daemon (unless explicitly disabled for tests)
   if (!process.env.REPLICATOR_DISABLED) {
     const { startReplicator } = require('./utils/backgroundJobs');
