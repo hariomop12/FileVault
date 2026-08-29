@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
+const logger = require('../utils/logger');
 
 class LocalStorageService {
     constructor(uploadDir = './uploads') {
@@ -11,9 +12,9 @@ class LocalStorageService {
     async ensureUploadDir() {
         try {
             await fs.mkdir(this.uploadDir, { recursive: true });
-            console.log(`✅ Local upload directory ready: ${this.uploadDir}`);
+            logger.info(`✅ Local upload directory ready: ${this.uploadDir}`);
         } catch (error) {
-            console.error(`❌ Failed to create upload directory: ${error.message}`);
+            logger.error(`❌ Failed to create upload directory: ${error.message}`);
         }
     }
 
@@ -28,10 +29,10 @@ class LocalStorageService {
             // Write file
             await fs.writeFile(filePath, file.buffer);
 
-            console.log(`✅ File uploaded locally: ${key}`);
+            logger.info(`✅ File uploaded locally: ${key}`);
             return { success: true, key, path: filePath };
         } catch (error) {
-            console.error(`❌ Local file upload failed: ${error.message}`);
+            logger.error(`❌ Local file upload failed: ${error.message}`);
             throw error;
         }
     }
@@ -42,7 +43,7 @@ class LocalStorageService {
             const fileBuffer = await fs.readFile(filePath);
             return fileBuffer;
         } catch (error) {
-            console.error(`❌ Failed to read file: ${error.message}`);
+            logger.error(`❌ Failed to read file: ${error.message}`);
             throw error;
         }
     }
@@ -51,10 +52,10 @@ class LocalStorageService {
         try {
             const filePath = path.join(this.uploadDir, key);
             await fs.unlink(filePath);
-            console.log(`✅ File deleted locally: ${key}`);
+            logger.info(`✅ File deleted locally: ${key}`);
             return { success: true };
         } catch (error) {
-            console.error(`❌ Failed to delete file: ${error.message}`);
+            logger.error(`❌ Failed to delete file: ${error.message}`);
             throw error;
         }
     }

@@ -196,7 +196,7 @@ const AuthService = {
         token,
       };
     } catch (error) {
-      console.error(`Login error: ${error.message}`);
+      logger.error(`Login error: ${error.message}`);
       logger.error(`❌ Error in AuthService.loginUser: ${error.message}`);
       throw new Error("Error logging in user");
     }

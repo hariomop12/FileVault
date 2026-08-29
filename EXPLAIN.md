@@ -279,8 +279,31 @@ ownership + RBAC checks composed; anonymous files are capability-gated by
 
 ---
 
+## Recent hardening (ask-the-team-newest changes)
+
+- **Email verification is enforced end-to-end.** Signup stores `email_verified=false`
+  and issues no token; login is gated by a real Nodemailer email containing a one-time
+  verification link (`/api/v1/auth/verify-email?token=...`). No silent auto-verify,
+  no token-before-verification. SMTP creds are stripped of whitespace before use and
+  logged only as lengths.
+- **Browser multipart uploads to R2 actually work.** Two real-world fixes live:
+  1. R2 bucket CORS rules (script: `scripts/configureR2Cors.js`) so presigned-part PUTs
+     pass browser preflight and expose `ETag` (needed to complete the multipart upload).
+  2. The SDK's automatic CRC32 **checksum of the empty placeholder body** gets embedded
+     in presigned part URLs by default → would fail on real uploads with `BadDigest`.
+     Part URLs are now signed with a client that has `requestChecksumCalculation: "WHEN_REQUIRED"`,
+     so the URL stays clean and the real body is checksummed correctly.
+- **Uploads always land in the logged-in user's account.** The dashboard posts to the
+  authenticated route (`/api/v1/upload`, into `filevault_files_authed`) instead of the
+  anonymous table (`/api/v1/files/upload`), so uploaded files appear in the Files page
+  and storage stats immediately.
+- **Storage-node replicas self-heal from STALE → ACTIVE** when a healthy node is detected
+  during reconcile — no operator intervention needed after a node comes back up.
+
+---
+
 ## Quick "convince the interviewer" numbers (test suite)
-- **168 tests / 23 suites** — `npm test` in `backend/` (jest)
+- **171 tests / 23 suites** — `npm test` in `backend/` (jest)
 - Property test for hash-ring remapping ratio ≈ 1/n
 - Heartbeat suspicion windows: 30s soft / 90s hard; scan every 10s
 - 4× parallel upload parts, resume after failure

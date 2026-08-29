@@ -78,7 +78,7 @@ exports.uploadFile = async (req, res) => {
       // Use local storage
       await localStorage.uploadFile(file, fileName);
       fileUrl = localStorage.getFileUrl(fileName);
-      console.log(`✅ Anonymous file uploaded to local storage: ${fileName}`);
+      logger.info(`✅ Anonymous file uploaded to local storage: ${fileName}`);
     } else {
       // Upload file to R2/S3
       const bucket = process.env.R2_BUCKET_NAME;
@@ -92,7 +92,7 @@ exports.uploadFile = async (req, res) => {
       const command = new PutObjectCommand(params);
       await s3Client.send(command);
       fileUrl = `${process.env.R2_ENDPOINT}/${fileName}`;
-      console.log(`✅ Anonymous file uploaded to R2: ${fileName}`);
+      logger.info(`✅ Anonymous file uploaded to R2: ${fileName}`);
     }
 
     // Save metadata to database
@@ -160,7 +160,7 @@ exports.downloadFile = async (req, res) => {
     fileDownloadCounter.inc({ status: "success" });
   } catch (error) {
     fileDownloadCounter.inc({ status: "failure" });
-    console.error("Download Error:", error);
+    logger.error("Download Error:", { error: error.message });
     res.status(500).json({ error: "Download failed", message: error.message });
   }
 };
@@ -199,7 +199,6 @@ const UserFileController = {
   getUserFiles: async (req, res) => {
     try {
       const userId = req.user.id;
-      console.log(`Getting files for user ID: ${userId}`);
 
       const result = await FileService.getUserFiles(userId);
 
@@ -209,7 +208,6 @@ const UserFileController = {
       });
     } catch (error) {
       logger.error(`❌ Error getting user files: ${error.message}`);
-      console.error(`Error in getUserFiles: ${error.message}`);
       res.status(500).json({
         success: false,
         message: "Failed to retrieve user files",
@@ -355,7 +353,6 @@ const UserFileController = {
   getStorage: async (req, res) => {
     try {
       const userId = req.user.id;
-      console.log(`Getting storage for user ID: ${userId}`);
 
       const result = await FileService.getUserStorage(userId);
 
@@ -376,7 +373,6 @@ const UserFileController = {
   getFileCount: async (req, res) => {
     try {
       const userId = req.user.id;
-      console.log(`Getting file count for user ID: ${userId}`);
 
       const result = await FileService.getUserFileCount(userId);
 
@@ -397,7 +393,6 @@ const UserFileController = {
   getStats: async (req, res) => {
     try {
       const userId = req.user.id;
-      console.log(`Getting stats for user ID: ${userId}`);
 
       const result = await FileService.getUserStats(userId);
 

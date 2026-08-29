@@ -15,6 +15,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./config/swagger');
 const { apiLimiter, authLimiter } = require("./middlewares/rateLimiting.middleware");
 const { httpMetricsMiddleware } = require("./utils/monitoring");
+const logger = require("./utils/logger");
 
 // Load env variables
 dotenv.config();
@@ -117,7 +118,7 @@ app.use("/metrics", metricsRoutes);  // Prometheus metrics scrape endpoint
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(`Unhandled error: ${err.stack}`);
   res.status(500).json({
     success: false,
     message: "Something went wrong!"

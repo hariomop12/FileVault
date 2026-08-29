@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 
 jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
   promises: {
     mkdir: jest.fn().mockResolvedValue(undefined),
     writeFile: jest.fn().mockResolvedValue(undefined),

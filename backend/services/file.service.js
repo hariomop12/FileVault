@@ -38,8 +38,6 @@ const FileService = {
   // Get all files for a user
   getUserFiles: async (userId) => {
     try {
-      console.log(`Getting files for user ID: ${userId}`);
-
       const result = await query(
         `SELECT id, filename, file_type, file_size, is_public, s3_key, created_at 
          FROM filevault_files_authed
@@ -48,8 +46,6 @@ const FileService = {
         [userId]
       );
 
-      console.log("Query result:", result);
-      console.log(`Number of files found: ${result.rows.length}`);
       // If no files found, return empty array
       if (result.rows.length === 0) {
         return { files: [] };
@@ -313,8 +309,6 @@ const FileService = {
   // Get user's total storage usage
   getUserStorage: async (userId) => {
     try {
-      console.log(`Getting storage usage for user ID: ${userId}`);
-
       const result = await query(
         `SELECT COALESCE(SUM(file_size), 0) as total_storage_used
          FROM filevault_files_authed
@@ -345,8 +339,6 @@ const FileService = {
   // Get user's total file count
   getUserFileCount: async (userId) => {
     try {
-      console.log(`Getting file count for user ID: ${userId}`);
-
       const result = await query(
         `SELECT COUNT(*) as total_files
          FROM filevault_files_authed
@@ -366,8 +358,6 @@ const FileService = {
   // Get comprehensive user statistics (cool feature!)
   getUserStats: async (userId) => {
     try {
-      console.log(`Getting comprehensive stats for user ID: ${userId}`);
-
       // Get storage info
       const storageResult = await query(
         `SELECT COALESCE(SUM(file_size), 0) as total_storage_used, COUNT(*) as total_files
@@ -458,7 +448,7 @@ const FileService = {
       if (storageConfig.type === 'LOCAL') {
         // Use local storage
         await localStorage.uploadFile(file, s3Key);
-        console.log(`✅ File uploaded to local storage: ${s3Key}`);
+        logger.info(`✅ File uploaded to local storage: ${s3Key}`);
       } else {
         // Upload file to R2/S3
         const params = {
@@ -469,7 +459,7 @@ const FileService = {
         };
 
         await s3Client.send(new PutObjectCommand(params));
-        console.log(`✅ File uploaded to R2: ${s3Key}`);
+        logger.info(`✅ File uploaded to R2: ${s3Key}`);
       }
 
       // Save to database

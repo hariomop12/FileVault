@@ -83,6 +83,14 @@ Perfect for building secure file sharing platforms, document management systems,
 - ✅ Error tracking with unique IDs
 - ✅ Health check endpoints
 
+### 🗄️ **Distributed Storage Engine**
+- ✅ Multi-node storage registry with heartbeat + failure detection (suspicion window, STALE → DOWN)
+- ✅ Consistent hashing with virtual nodes (add/remove node remaps only ~1/n keys)
+- ✅ Replication (`REPLICATION_FACTOR=3`) across distinct nodes + self-healing background reconciler
+- ✅ Multipart uploads (resume/retry, per-part ETags, presigned URLs, R2 CORS)
+- ✅ RBAC roles: `ADMIN` / `USER` / `READ_ONLY` with admin storage-nodes & replication dashboard
+- ✅ Prometheus metrics (Prom-client) + committed Grafana dashboard
+
 ---
 
 ## 🛠️ Tech Stack
@@ -129,7 +137,7 @@ cd FileVault
 ```
 
 ### **2. Environment Setup**
-Create `.env` file in the root directory:
+Create `backend/.env` (all backend commands below run from the `backend/` directory):
 
 ```env
 # Server Configuration
@@ -217,6 +225,18 @@ npm start
 1. Enable 2-Step Verification in Google Account
 2. Generate App Password: [Google App Passwords](https://myaccount.google.com/apppasswords)
 3. Use app password (16 characters, no spaces) in `EMAIL_PASS`
+
+### **Admin Account (RBAC)**
+New signups get the `USER` role and must verify email before login. To promote a user:
+```sql
+UPDATE filevault_users SET role = 'ADMIN' WHERE email = 'you@example.com';
+```
+
+### **R2 CORS (browser uploads)**
+First time only — allows the browser to PUT multipart parts to the bucket directly:
+```bash
+node scripts/configureR2Cors.js
+```
 
 ### **Rate Limiting**
 ```javascript
