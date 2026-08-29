@@ -37,8 +37,9 @@ describe('Auth API - Integration', () => {
         .post('/api/v1/auth/signup')
         .send({ name: 'John', email: 'john@test.com', password: 'password123' });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('User already exists');
+      expect(res.status).toBe(409);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toBe('User already exists');
     });
 
     it('should reject missing fields', async () => {

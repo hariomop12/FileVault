@@ -1,5 +1,5 @@
 // file.controller.test.js
-const { uploadFilee } = require('./file.controller');
+const { uploadUserFile } = require('./file.controller');
 const FileService = require('../services/file.service');
 const logger = require('../utils/logger');
 
@@ -8,7 +8,7 @@ jest.mock('../services/file.service');
 jest.mock('../utils/logger');
 
 describe('UserFileController', () => {
-  describe('uploadFilee', () => {
+  describe('uploadUserFile', () => {
     let req, res;
 
     beforeEach(() => {
@@ -37,7 +37,7 @@ describe('UserFileController', () => {
       req.file = null;
       
       // Act
-      await uploadFilee(req, res);
+      await uploadUserFile(req, res);
       
       // Assert
       expect(res.status).toHaveBeenCalledWith(400);
@@ -56,7 +56,7 @@ describe('UserFileController', () => {
       FileService.uploadUsersFile.mockResolvedValue(mockResult);
       
       // Act
-      await uploadFilee(req, res);
+      await uploadUserFile(req, res);
       
       // Assert
       expect(FileService.uploadUsersFile).toHaveBeenCalledWith(req.file, req.user.id);
@@ -73,7 +73,7 @@ describe('UserFileController', () => {
       FileService.uploadUsersFile.mockRejectedValue(new Error('Test error'));
       
       // Act
-      await uploadFilee(req, res);
+      await uploadUserFile(req, res);
       
       // Assert
       expect(logger.error).toHaveBeenCalled();

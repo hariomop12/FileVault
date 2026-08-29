@@ -31,7 +31,7 @@ describe('AuthService', () => {
 
       const result = await AuthService.registerUser('John', 'john@test.com', 'password123');
 
-      expect(result.success).toBe('User registered successfully');
+      expect(result.success).toBe(true);
       expect(result.user.name).toBe('John');
       expect(result.user.email).toBe('john@test.com');
       expect(result.verificationToken).toBeDefined();
@@ -42,7 +42,9 @@ describe('AuthService', () => {
 
       const result = await AuthService.registerUser('John', 'john@test.com', 'password123');
 
-      expect(result.error).toBe('User already exists');
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('User already exists');
+      expect(result.statusCode).toBe(409);
     });
 
     it('should hash the password before inserting', async () => {
@@ -81,7 +83,7 @@ describe('AuthService', () => {
 
       const result = await AuthService.loginUser('john@test.com', 'password123');
 
-      expect(result.success).toBe('User logged in successfully');
+      expect(result.success).toBe(true);
       expect(result.token).toBeDefined();
       expect(result.user.email).toBe('john@test.com');
     });
@@ -91,7 +93,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.loginUser('unknown@test.com', 'password123');
 
-      expect(result.error).toBe('Invalid credentials');
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Invalid credentials');
     });
 
     it('should fail with wrong password', async () => {
@@ -100,7 +103,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.loginUser('john@test.com', 'wrongpassword');
 
-      expect(result.error).toBe('Invalid credentials');
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Invalid credentials');
     });
 
     it('should block login until email is verified', async () => {
@@ -109,7 +113,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.loginUser('john@test.com', 'password123');
 
-      expect(result.error).toBe('Email not verified');
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Email not verified');
       expect(result.token).toBeUndefined();
     });
 
@@ -136,7 +141,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.verifyEmail('valid-token');
 
-      expect(result.success).toBe('Email verified successfully');
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Email verified successfully');
     });
 
     it('should fail with invalid token', async () => {
@@ -144,7 +150,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.verifyEmail('invalid-token');
 
-      expect(result.error).toBe('Invalid verification token');
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Invalid verification token');
     });
   });
 
@@ -154,7 +161,7 @@ describe('AuthService', () => {
 
       const result = await AuthService.forgotPassword('john@test.com');
 
-      expect(result.success).toBe('Password reset email sent');
+      expect(result.success).toBe(true);
     });
 
     it('should return error for non-existent email', async () => {
@@ -162,7 +169,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.forgotPassword('unknown@test.com');
 
-      expect(result.error).toBe('No user found with this email');
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('No user found with this email');
     });
   });
 
@@ -172,7 +180,7 @@ describe('AuthService', () => {
 
       const result = await AuthService.resetPassword('valid-token', 'newPassword123');
 
-      expect(result.success).toBe('Password reset successfully');
+      expect(result.success).toBe(true);
     });
 
     it('should fail with invalid token', async () => {
@@ -180,7 +188,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.resetPassword('invalid-token', 'newPassword123');
 
-      expect(result.error).toBe('Invalid or expired token');
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Invalid or expired token');
     });
   });
 
@@ -190,7 +199,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.resendVerificationEmail('john@test.com');
 
-      expect(result.success).toBe('Verification email sent');
+      expect(result.success).toBe(true);
+      expect(result.verificationToken).toBeDefined();
     });
 
     it('should fail when email is already verified', async () => {
@@ -198,7 +208,8 @@ describe('AuthService', () => {
 
       const result = await AuthService.resendVerificationEmail('john@test.com');
 
-      expect(result.error).toBe('Email not found or already verified');
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Email not found or already verified');
     });
   });
 });

@@ -64,7 +64,7 @@ exports.uploadFile = async (req, res) => {
   try {
     const file = req.file;
     if (!file) {
-      return res.status(400).json({ error: "No file uploaded" });
+      return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
     const fileId = generateId(10);
@@ -125,7 +125,7 @@ exports.downloadFile = async (req, res) => {
     const { file_id, secret_key } = req.body;
 
     if (!file_id || !secret_key) {
-      return res.status(400).json({ error: "Missing file_id or secret_key" });
+      return res.status(400).json({ success: false, message: "Missing file_id or secret_key" });
     }
 
     // Fetch file details from DB
@@ -135,7 +135,7 @@ exports.downloadFile = async (req, res) => {
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Invalid file_id or secret_key" });
+      return res.status(404).json({ success: false, message: "Invalid file_id or secret_key" });
     }
     const fileData = result.rows[0];
 
@@ -161,7 +161,7 @@ exports.downloadFile = async (req, res) => {
   } catch (error) {
     fileDownloadCounter.inc({ status: "failure" });
     logger.error("Download Error:", { error: error.message });
-    res.status(500).json({ error: "Download failed", message: error.message });
+    res.status(500).json({ success: false, message: "Download failed" });
   }
 };
 
@@ -170,7 +170,7 @@ const UserFileController = {
   uploadMiddleware: upload.single("file"),
 
   // Upload file to S3
-  uploadFilee: async (req, res) => {
+  uploadUserFile: async (req, res) => {
     try {
       const file = req.file;
       if (!file) {

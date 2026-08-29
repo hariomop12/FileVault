@@ -67,7 +67,7 @@ router.post(
   uploadLimiter, // Rate limit for file uploads
   UserFileController.uploadMiddleware,
   validateFileUpload,
-  UserFileController.uploadFilee
+  UserFileController.uploadUserFile
 );
 
 /**

@@ -38,7 +38,10 @@ const AuthController = {
 
       const result = await AuthService.registerUser(name, email, password);
       if (!result.success) {
-        return res.status(400).json(result);
+        return res.status(result.statusCode || 400).json({
+          success: false,
+          message: result.message || result.error,
+        });
       }
 
       // No token issued: the account must be verified by email before login.
@@ -69,7 +72,7 @@ const AuthController = {
 
       const result = await AuthService.loginUser(email, password);
       if (!result.success) {
-        const message = result.error || "Invalid credentials";
+        const message = result.message || "Invalid credentials";
         return res.status(401).json({ success: false, message });
       }
 
@@ -100,7 +103,10 @@ const AuthController = {
       const result = await AuthService.verifyEmail(token);
 
       if (!result.success) {
-        return res.status(400).json(result);
+        return res.status(400).json({
+          success: false,
+          message: result.message || result.error,
+        });
       }
       res.status(200).json({
         success: true,
@@ -167,7 +173,10 @@ const AuthController = {
       const result = await AuthService.resetPassword(token, password);
 
       if (!result.success) {
-        return res.status(400).json(result);
+        return res.status(400).json({
+          success: false,
+          message: result.message || result.error,
+        });
       }
 
       res.status(200).json({
@@ -197,8 +206,8 @@ const AuthController = {
       
       const result = await AuthService.resendVerificationEmail(email);
       
-      if (result.error) {
-        return res.status(400).json({ success: false, message: result.error });
+      if (!result.success) {
+        return res.status(400).json({ success: false, message: result.message || result.error });
       }
       
       res.status(200).json({

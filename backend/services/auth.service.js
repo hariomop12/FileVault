@@ -35,7 +35,11 @@ const AuthService = {
         [email]
       );
       if (userCheck.rows.length > 0) {
-        return { error: "User already exists" };
+        return {
+          success: false,
+          message: "User already exists",
+          statusCode: 409,
+        };
       }
 
       // Hash password
@@ -59,7 +63,7 @@ const AuthService = {
       });
 
       return {
-        success: "User registered successfully",
+        success: true,
         user: {
           id: user.id,
           name: user.name,
@@ -151,7 +155,11 @@ const AuthService = {
 
       if (result.rows.length === 0) {
         logger.info(`User not found: ${email}`);
-        return { error: "Invalid credentials", detail: "Email not found" };
+        return {
+          success: false,
+          message: "Invalid credentials",
+          detail: "Email not found",
+        };
       }
 
       const user = result.rows[0];
@@ -162,13 +170,18 @@ const AuthService = {
       logger.info(`Password match: ${isMatch}`);
 
       if (!isMatch) {
-        return { error: "Invalid credentials", detail: "Password incorrect" };
+        return {
+          success: false,
+          message: "Invalid credentials",
+          detail: "Password incorrect",
+        };
       }
 
       // Enforce email verification before issuing tokens
       if (!user.email_verified) {
         return {
-          error: "Email not verified",
+          success: false,
+          message: "Email not verified",
           detail: "Please verify your email address",
         };
       }
@@ -186,7 +199,7 @@ const AuthService = {
       );
 
       return {
-        success: "User logged in successfully",
+        success: true,
         user: {
           id: user.id,
           name: user.name,
@@ -211,7 +224,7 @@ const AuthService = {
       );
 
       if (result.rows.length === 0) {
-        return { error: "Invalid verification token" };
+        return { success: false, message: "Invalid verification token" };
       }
 
       // Update user to verified and clear token
@@ -220,7 +233,7 @@ const AuthService = {
         [token]
       );
 
-      return { success: "Email verified successfully" };
+      return { success: true, message: "Email verified successfully" };
     } catch (error) {
       logger.error(`❌ Error in AuthService.verifyEmail: ${error.message}`);
       throw new Error("Error verifying email", error.message);
@@ -237,7 +250,7 @@ const AuthService = {
       );
 
       if (result.rows.length === 0) {
-        return { error: "No user found with this email" };
+        return { success: false, message: "No user found with this email" };
       }
 
       const user = result.rows[0];
@@ -259,7 +272,7 @@ const AuthService = {
       ).catch((err) => {
         logger.warn(`Password reset email failed (non-blocking): ${err.message}`);
       });
-      return { success: "Password reset email sent" };
+      return { success: true, message: "Password reset email sent" };
     } catch (error) {
       logger.error(`❌ Error in AuthService.forgotPassword: ${error.message}`);
       throw new Error("Error requesting password reset", error.message);
@@ -319,7 +332,7 @@ const AuthService = {
       );
 
       if (result.rows.length === 0) {
-        return { error: "Invalid or expired token" };
+        return { success: false, message: "Invalid or expired token" };
       }
 
       // Hash Newpassword
@@ -332,7 +345,7 @@ const AuthService = {
         [hashedPassword, token]
       );
 
-      return { success: "Password reset successfully" };
+      return { success: true, message: "Password reset successfully" };
     } catch (error) {
       logger.error(`❌ Error in AuthService.resetPassword: ${error.message}`);
       throw new Error("Error resetting password");
@@ -348,7 +361,7 @@ const AuthService = {
         [email]
       );
       if (result.rows.length === 0) {
-        return { error: "Email not found or already verified" };
+        return { success: false, message: "Email not found or already verified" };
       }
 
       const user = result.rows[0];
@@ -376,8 +389,9 @@ const AuthService = {
         logger.warn(`Resend verification email failed (non-blocking): ${err.message}`);
       });
       return {
-        success: "Verification email sent",
-        varificationToken: verificationToken,
+        success: true,
+        message: "Verification email sent",
+        verificationToken: verificationToken,
       };
     } catch (error) {
       logger.error(

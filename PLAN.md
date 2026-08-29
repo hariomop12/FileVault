@@ -406,11 +406,11 @@ update resume (Section 5) → call it DONE. Tai. 🛑**
 > docs accuracy, aur ek final green regression. **Order me 1→5 karna hai.**
 
 ## 1. API surface clean-up (interview: pehla impression)
-- [ ] Rename `uploadFilee` → `uploadFile` (route + controller + tests)
-- [ ] Unify error shape: sab jagah `{ success: false, message }` (ab kuch `{ error }` hain)
-- [ ] Duplicate-email signup: `400` → `409 Conflict` (frontend already handles both)
-- [ ] Frontend `auth.ts` / stray `console.log`s hatao (startup info allowed only in server.js)
-- [ ] `npm run lint` + `npm test` green
+- [x] Rename `uploadFilee` → `uploadUserFile` (route + controller + tests) — collision with anonymous `uploadFile` resolved via clearer name
+- [x] Unify error shape: sab jagah `{ success: false, message }` (auth service/controller + anonymous files; controllers normalize service-level `{error}` at the boundary)
+- [x] Duplicate-email signup: `400` → `409 Conflict` (+ `statusCode` on service result; frontend already handles both)
+- [x] Frontend `auth.ts` se credential-logging `console.log`s hatao (register/login) — startup info allowed only in server.js
+- [x] Tests green: 174/174 + frontend TS build. NOTE: `pnpm run lint` script is a pre-existing stub (just echoes filenames) and `eslint@10` needs flat config — `.eslintrc.js` era rules don't run (out of scope, logged in EXPLAIN/known-issues)
 
 ## 2. Prod data clean-up (demo hygiene)
 - [ ] k6 test files (~10×5MB, R2 + DB) delete via API (k6@filevault.hariomop.in session)

@@ -40,18 +40,12 @@ api.interceptors.response.use(
 
 export const authService = {
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    console.log('🔧 AuthService.register called with:', credentials);
-    console.log('🌐 Making request to:', api.defaults.baseURL + '/api/v1/auth/signup');
     const response = await api.post('/api/v1/auth/signup', credentials);
-    console.log('📥 AuthService.register response:', response.data);
     return response.data;
   },
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    console.log('🔧 AuthService.login called with:', credentials);
-    console.log('🌐 Making request to:', api.defaults.baseURL + '/api/v1/auth/login');
     const response = await api.post('/api/v1/auth/login', credentials);
-    console.log('📥 AuthService.login response:', response.data);
     return response.data;
   },
 
