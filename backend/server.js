@@ -28,6 +28,12 @@ async function startServer() {
   // Increase header size limit to prevent 431 errors
   server.maxHeadersCount = 0; // No limit on header count
   server.headersTimeout = 60000; // 60 seconds timeout
+
+  // Start heartbeat/failure-detection daemon (unless explicitly disabled for tests)
+  if (!process.env.HEARTBEAT_MONITOR_DISABLED) {
+    const { startHeartbeatMonitor } = require('./utils/backgroundJobs');
+    startHeartbeatMonitor();
+  }
 }
 
 // Initialize the server

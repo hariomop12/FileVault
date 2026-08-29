@@ -16,6 +16,7 @@ router.put("/users/:id/role", AdminController.updateUserRole);
 router.get("/nodes", NodeController.listNodes);
 router.post("/nodes", NodeController.registerNode);
 router.put("/nodes/:id/status", NodeController.updateNodeStatus);
+router.post("/nodes/:id/heartbeat", NodeController.recordHeartbeat);
 router.get("/nodes/ring", NodeController.getRingInfo);
 router.get("/nodes/ring/placement", NodeController.getRingPlacement);
 router.get("/nodes/health", NodeController.getNodeHealth);

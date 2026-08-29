@@ -86,6 +86,19 @@ const NodeController = {
       res.status(500).json({ success: false, message: "Failed to get node health" });
     }
   },
+
+  recordHeartbeat: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await StorageNodeService.recordHeartbeat(parseInt(id));
+      if (!result) {
+        return res.status(404).json({ success: false, message: "Node not found" });
+      }
+      res.status(200).json({ success: true, message: "Heartbeat recorded", node: result.node });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to record heartbeat" });
+    }
+  },
 };
 
 module.exports = NodeController;

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { testConnection } = require("../config/db");
+const StorageNodeService = require("../services/storageNode.service");
 
 router.get("/test", async (req, res) => {
   const checks = {
@@ -16,6 +17,16 @@ router.get("/test", async (req, res) => {
     checks.database = dbOk ? "UP" : "DOWN";
   } catch {
     checks.database = "DOWN";
+  }
+
+  try {
+    const health = await StorageNodeService.getNodeHealth();
+    checks.storageNodes = {
+      total: health.total,
+      byStatus: health.byStatus,
+    };
+  } catch {
+    checks.storageNodes = "UNKNOWN";
   }
 
   const allOk = checks.database === "UP";

@@ -84,6 +84,15 @@ class StorageNodeService {
     };
   }
 
+  async getNodeHeartbeatState() {
+    const result = await query(
+      `SELECT id, name, endpoint, status, last_heartbeat_at,
+              EXTRACT(EPOCH FROM (NOW() - last_heartbeat_at))::int AS age_seconds
+       FROM storage_nodes ORDER BY id ASC`
+    );
+    return result.rows;
+  }
+
   async buildRing(virtualNodes = 150) {
     const active = await this.getActiveNodes();
     const ring = new ConsistentHashRing(

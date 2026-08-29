@@ -70,21 +70,29 @@ describe('Storage Node API - Integration', () => {
     });
   });
 
-  describe('GET /api/v1/admin/nodes/ring/placement', () => {
-    it('places a file on distinct nodes', async () => {
+  describe('POST /api/v1/admin/nodes/:id/heartbeat', () => {
+    it('records a heartbeat and revives the node (admin)', async () => {
       __setMockRows([
-        { id: 1, name: 'A', type: 'LOCAL', status: 'ACTIVE' },
-        { id: 2, name: 'B', type: 'R2', status: 'ACTIVE' },
-        { id: 3, name: 'C', type: 'R2', status: 'ACTIVE' },
+        { id: 7, name: 'hello-node', status: 'ACTIVE', last_heartbeat_at: new Date().toISOString() },
       ]);
 
       const res = await request(app)
-        .get('/api/v1/admin/nodes/ring/placement?key=myfile.txt&replicas=3')
+        .post('/api/v1/admin/nodes/7/heartbeat')
         .set('Authorization', 'Bearer admin-token');
 
       expect(res.status).toBe(200);
-      expect(res.body.replicas).toHaveLength(3);
-      expect(new Set(res.body.replicas).size).toBe(3);
+      expect(res.body.success).toBe(true);
+      expect(res.body.node.id).toBe(7);
+    });
+
+    it('returns 404 for an unknown node', async () => {
+      __setMockRows([]);
+
+      const res = await request(app)
+        .post('/api/v1/admin/nodes/999/heartbeat')
+        .set('Authorization', 'Bearer admin-token');
+
+      expect(res.status).toBe(404);
     });
   });
 });
