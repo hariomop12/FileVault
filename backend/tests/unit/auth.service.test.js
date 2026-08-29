@@ -102,6 +102,32 @@ describe('AuthService', () => {
 
       expect(result.error).toBe('Invalid credentials');
     });
+
+    it('should block login until email is verified', async () => {
+      __setMockRows([{ ...mockUser, email_verified: false }]);
+      bcrypt.compare = jest.fn().mockResolvedValue(true);
+
+      const result = await AuthService.loginUser('john@test.com', 'password123');
+
+      expect(result.error).toBe('Email not verified');
+      expect(result.token).toBeUndefined();
+    });
+
+    it('should register new users as unverified', async () => {
+      jest.clearAllMocks();
+      const insertMock = __setMockResponses([
+        { rows: [] },
+        { rows: [{ id: 2, name: 'Jane', email: 'jane@test.com', verification_token: 'tok123' }] },
+      ]);
+
+      const result = await AuthService.registerUser('Jane', 'jane@test.com', 'password123');
+
+      expect(result.user.email).toBe('jane@test.com');
+      expect(query).toHaveBeenCalledWith(
+        expect.stringContaining('email_verified) VALUES ($1, $2, $3, $4, false)'),
+        expect.anything()
+      );
+    });
   });
 
   describe('verifyEmail', () => {

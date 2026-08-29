@@ -41,18 +41,11 @@ const AuthController = {
         return res.status(400).json(result);
       }
 
-      const jwt = require("jsonwebtoken");
-      const token = jwt.sign(
-        { id: result.user.id, email: result.user.email },
-        process.env.JWT_SECRET,
-        { expiresIn: "24h" }
-      );
-
+      // No token issued: the account must be verified by email before login.
       res.status(201).json({
         success: true,
-        message: "Registration successful!",
+        message: "Registration successful! Please verify your email to continue.",
         user: result.user,
-        token,
       });
     } catch (error) {
       logger.error(`Register Controller Error: ${error.message}`);
@@ -76,7 +69,8 @@ const AuthController = {
 
       const result = await AuthService.loginUser(email, password);
       if (!result.success) {
-        return res.status(401).json(result);
+        const message = result.error || "Invalid credentials";
+        return res.status(401).json({ success: false, message });
       }
 
       res.status(200).json({

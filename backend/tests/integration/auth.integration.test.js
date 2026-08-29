@@ -26,7 +26,8 @@ describe('Auth API - Integration', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.token).toBeDefined();
+      expect(res.body.user.email).toBe('john@test.com');
+      expect(res.body.token).toBeUndefined();
     });
 
     it('should reject duplicate email', async () => {

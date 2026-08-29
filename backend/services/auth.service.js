@@ -9,13 +9,16 @@ const nodemailer = require("nodemailer");
 let _transporter = null;
 const getTransporter = () => {
   if (!_transporter) {
+    // Gmail app passwords are formatted as "xxxx xxxx xxxx xxxx" — strip
+    // whitespace so pasted secrets authenticate correctly.
+    const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
     _transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || "smtp.gmail.com",
       port: parseInt(process.env.EMAIL_PORT || "587"),
       secure: process.env.EMAIL_SECURE === "true",
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        pass,
       },
     });
   }
@@ -42,9 +45,9 @@ const AuthService = {
       // Generate verification token
       const verificationToken = crypto.randomBytes(32).toString("hex");
 
-      // Insert user into database (email_verified = true — no email verification required)
+      // Insert user into database (unverified — a real verification link is emailed)
       const result = await query(
-        "INSERT INTO filevault_users (name, email, password, verification_token, email_verified) VALUES ($1, $2, $3, $4, true) RETURNING *",
+        "INSERT INTO filevault_users (name, email, password, verification_token, email_verified) VALUES ($1, $2, $3, $4, false) RETURNING *",
         [name, email, hashedPassword, verificationToken]
       );
 
@@ -138,7 +141,7 @@ const AuthService = {
   // Login user
   loginUser: async (email, password) => {
     try {
-      console.log(`Attempting login for: ${email}`);
+      logger.info(`Attempting login for: ${email}`);
 
       // Check if user exists
       const result = await query(
@@ -147,19 +150,27 @@ const AuthService = {
       );
 
       if (result.rows.length === 0) {
-        console.log(`User not found: ${email}`);
+        logger.info(`User not found: ${email}`);
         return { error: "Invalid credentials", detail: "Email not found" };
       }
 
       const user = result.rows[0];
-      console.log(`User found. Email verified: ${user.email_verified}`);
+      logger.info(`User found. Email verified: ${user.email_verified}`);
 
       // Check password
       const isMatch = await bcrypt.compare(password, user.password);
-      console.log(`Password match: ${isMatch}`);
+      logger.info(`Password match: ${isMatch}`);
 
       if (!isMatch) {
         return { error: "Invalid credentials", detail: "Password incorrect" };
+      }
+
+      // Enforce email verification before issuing tokens
+      if (!user.email_verified) {
+        return {
+          error: "Email not verified",
+          detail: "Please verify your email address",
+        };
       }
 
       // Generate JWT token
