@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const fileController = require("../controllers/file.controller");
 const { uploadLimiter } = require("../middlewares/rateLimiting.middleware");
+const cacheControl = require("../middlewares/cacheControl.middleware");
 
 /**
  * @swagger
@@ -161,7 +162,10 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/download", fileController.downloadFile
+router.post(
+  "/download",
+  cacheControl({ policy: "public", maxAge: 3600 }),
+  fileController.downloadFile
     /* 
     #swagger.tags = ['Anonymous Files']
     #swagger.summary = 'Anonymous file download'

@@ -4,6 +4,7 @@ const UserFileController = require("../controllers/file.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
 const { validateFileUpload } = require('../middlewares/validation.middleware');
 const { uploadLimiter, createEndpointLimiter } = require('../middlewares/rateLimiting.middleware');
+const cacheControl = require('../middlewares/cacheControl.middleware');
 
 // Apply auth middleware to all routes
 router.use(authMiddleware);
@@ -252,7 +253,12 @@ router.get(
  *       404:
  *         description: File not found
  */
-router.get("/download/:id(\\d+)", UserFileController.getDownloadLink);
+router.get(
+  "/download/:id(\\d+)",
+  createEndpointLimiter(20, 1),
+  cacheControl({ policy: "private" }),
+  UserFileController.getDownloadLink
+);
 /**
  * @swagger
  * /api/v1/files/{id}:

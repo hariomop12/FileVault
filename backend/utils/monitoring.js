@@ -54,6 +54,12 @@ const multipartActive = new client.Gauge({
   help: "Number of in-flight (PENDING) multipart uploads",
 });
 
+const cacheRequestsTotal = new client.Counter({
+  name: "cache_requests_total",
+  help: "CDN edge-cache outcomes seen by the origin (HIT / MISS / EXPIRED / BYPASS / ...)",
+  labelNames: ["status", "policy"], // status=HIT|MISS|..., policy=public|private
+});
+
 // Middleware: record per-request rate + latency. Skips the metrics/health
 // scrapes themselves so dashboards stay clean.
 function httpMetricsMiddleware(req, res, next) {
@@ -116,6 +122,7 @@ module.exports = {
   filesUnderReplicated,
   hashRingNodes,
   multipartActive,
+  cacheRequestsTotal,
   httpMetricsMiddleware,
   updateSystemGauges,
 };
