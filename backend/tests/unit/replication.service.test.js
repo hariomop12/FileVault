@@ -126,6 +126,35 @@ describe('ReplicationService', () => {
       expect(report.current).toBe(3);
     });
 
+    it('revives STALE replicas when their node is healthy again (node revival)', async () => {
+      StorageNodeService.getAllNodes.mockResolvedValue({ nodes: [NODE_A, NODE_B, NODE_C] });
+      StorageNodeService.placeFile.mockResolvedValue({
+        primary: 'B',
+        replicas: ['B', 'C'],
+        replication_factor: 2,
+      });
+
+      __setMockResponses([
+        {
+          rows: [
+            { id: 21, node_id: 1, replica_status: 'STALE', node_name: 'A', node_status: 'ACTIVE' },
+            { id: 22, node_id: 2, replica_status: 'ACTIVE', node_name: 'B', node_status: 'ACTIVE' },
+          ],
+        },
+        { rows: [] }, // revival: A brought back STALE -> ACTIVE
+        { rows: [NODE_C] }, { rows: [] }, // top-up copy to C
+      ]);
+
+      const report = await ReplicationService.reconcileFile(7, 'user-1/file.txt', 3);
+
+      expect(query).toHaveBeenCalledWith(expect.stringContaining("status = 'ACTIVE'"), [21]);
+      expect(report.healthy_nodes).toEqual(expect.arrayContaining(['A', 'B']));
+      expect(report.recreated).toEqual(['C']);
+      expect(report.current).toBe(3);
+      expect(report.desired).toBe(3);
+      expect(s3Client.send).toHaveBeenCalledTimes(1);
+    });
+
     it('caps the desired factor at the number of registered nodes', async () => {
       StorageNodeService.getAllNodes.mockResolvedValue({ nodes: [NODE_A, NODE_B] });
       __setMockResponses([

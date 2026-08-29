@@ -96,6 +96,16 @@ class ReplicationService {
       }
     }
 
+    // A node that was lost but is healthy again still holds the blob it received
+    // before — revive its STALE replicas instead of treating them as dead data.
+    for (const row of rows) {
+      if (row.node_status === "ACTIVE" && row.replica_status === REPLICA_STATUS.STALE) {
+        await query("UPDATE file_replicas SET status = 'ACTIVE', updated_at = NOW() WHERE id = $1", [row.id]);
+        healthyNodes.add(row.node_name);
+        lostNodes.delete(row.node_name);
+      }
+    }
+
     const totalNodes = (await StorageNodeService.getAllNodes()).nodes.length;
     const desired = Math.max(1, Math.min(replicationFactor, totalNodes));
     const holding = new Set([...healthyNodes, ...lostNodes]);
