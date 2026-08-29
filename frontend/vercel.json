@@ -3,7 +3,6 @@
   "buildCommand": "CI=false pnpm run build",
   "installCommand": "pnpm install",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://file-vault-backend-g5102.sevalla.app/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://backend.filevault.hariomop.in/api/$1" }
   ]
 }
-

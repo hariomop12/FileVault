@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { AuthResponse, LoginCredentials, RegisterCredentials, ApiResponse } from '../types';
 
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://file-vault-backend-g5102.sevalla.app').replace(/\/+$/, '');
+const API_BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/+$/, '');
 
 const api = axios.create({
   // Use baseURL only when not using proxy (in production)
