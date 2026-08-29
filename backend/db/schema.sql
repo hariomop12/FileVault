@@ -236,6 +236,7 @@ CREATE TABLE public.filevault_users (
     email_verified boolean DEFAULT false,
     verification_token text,
     storage_quota bigint DEFAULT 1073741824,
+    role text DEFAULT 'USER'::text,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );

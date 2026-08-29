@@ -61,6 +61,7 @@ const AuthService = {
           id: user.id,
           name: user.name,
           email: user.email,
+          role: user.role || "USER",
         },
         verificationToken: user.verification_token,
       };
@@ -164,10 +165,14 @@ const AuthService = {
       // Generate JWT token
       const jwtSecret = process.env.JWT_SECRET;
 
-      const token = jwt.sign({ id: user.id, email: user.email }, jwtSecret, {
-        expiresIn: "24h",
-        algorithm: "HS256",
-      });
+      const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role || "USER" },
+        jwtSecret,
+        {
+          expiresIn: "24h",
+          algorithm: "HS256",
+        }
+      );
 
       return {
         success: "User logged in successfully",
@@ -175,6 +180,7 @@ const AuthService = {
           id: user.id,
           name: user.name,
           email: user.email,
+          role: user.role || "USER",
         },
         token,
       };
