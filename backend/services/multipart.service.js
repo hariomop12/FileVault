@@ -1,5 +1,6 @@
 const { s3Client, storageConfig } = require("../config/R2");
 const {
+  S3Client,
   CreateMultipartUploadCommand,
   UploadPartCommand,
   CompleteMultipartUploadCommand,
@@ -11,6 +12,25 @@ const crypto = require("crypto");
 const logger = require("../utils/logger");
 
 const DEFAULT_PART_SIZE = 8 * 1024 * 1024; // 8 MB
+
+// Presigning must not stamp an automatic CRC32 checksum on the URL: the signer
+// cannot hash the browser's part body, so the SDK would sign a checksum of an
+// empty payload and R2 would reject the real upload (BadDigest).
+const presignClient =
+  storageConfig.type === "R2"
+    ? new S3Client({
+        region: "auto",
+        endpoint: storageConfig.endpoint,
+        credentials: {
+          accessKeyId: storageConfig.accessKeyId,
+          secretAccessKey: storageConfig.secretAccessKey,
+        },
+        forcePathStyle: true,
+        s3ForcePathStyle: true,
+        signatureVersion: "v4",
+        requestChecksumCalculation: "WHEN_REQUIRED",
+      })
+    : null;
 
 const MultipartService = {
   requiresS3() {
@@ -72,7 +92,7 @@ const MultipartService = {
       UploadId: uploadId,
       PartNumber: partNumber,
     });
-    const url = await presign(s3Client, cmd, { expiresIn });
+    const url = await presign(presignClient, cmd, { expiresIn });
     return { url, part_number: partNumber, expires_in: expiresIn };
   },
 
