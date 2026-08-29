@@ -302,8 +302,56 @@ ownership + RBAC checks composed; anonymous files are capability-gated by
 
 ---
 
+## Production load test (k6, live on EC2 → R2)
+
+Runs from `k6/loadtest-core.js` and `k6/loadtest-upload.js` against the real
+deployment (`https://backend.filevault.hariomop.in`, node v20, 1 vCPU / 909 MB,
+Aiven Postgres, R2). Results below are post-tuning; **see "how we fixed the
+bottleneck" for the before/after story.**
+
+### Read path (steady, 30 VUs → ~236 req/s)
+- **235.7 req/s** sustained (18,910 requests), **0.00% errors**
+- Request latency: **p50 24 ms / p90 80 ms / p95 92 ms**, max 246 ms
+- `GET /api/v1/files`: p95 **29.5 ms** · `GET /api/v1/stats` (aggregate): p95 **105 ms**
+- Every k6 threshold green (`http_req_duration p95 < 600 ms`, `error rate < 1%`)
+
+### Read path at spike (60 VUs) — the before/after lesson
+Naive run: **244 req/s, p95 233 ms, 4.3% errors** (500/503). Root cause found via
+the app logs:
+- Aiven hobby plan caps `max_connections` at **20**; the app pool defaulted to
+  **20**, so the app alone could eat the whole budget on burst → pg refused new
+  connections ("remaining connection slots are reserved for SUPERUSER").
+- `config/db.js` also logged **every query** via `console.log` (event-loop drag
+  under load).
+
+**Fix (committed):** pool now sizes itself below the plan cap
+(`PG_MAX_POOL=10`) and the per-query `console.log` is gone. After the fix the
+same workload is **0.00% errors**. Talking point: *the artifact of a spike test
+caught a real capacity bug, and the fix is configured, not hard-coded.*
+
+### Upload path (5 MB files, sequential, over TLS, to R2)
+- **~6.2 → 7.7 MB/s** per stream (0.7–0.8 s per 5 MB, `201`), 0 failures
+- Upload rate limit: **5/min per user** (`uploadLimiter`) by design
+- Single-node caveat: burst of ≥4 concurrent large uploads on the 909 MB box can
+  trip pm2's `max_memory_restart` (700 MB) → one 502, then **autorestart ~1–2 s**
+  (self-healing, verified in `/var/log/filevault`). Scale path: bigger instance,
+  disk-backed multer, or the existing multipart path.
+
+### What the load tests surfaced (now fixed / documented)
+- **DB connection budget sizing** (above) — the highest-value catch.
+- **Replicator vs. real backend**: prod stores blobs in R2, but node
+  `local-default` was typed `LOCAL`, so reconcile tried `fs.copyFile` on a
+  non-existent local dir and flooded logs every 30 s. Node retyped `R2` →
+  S3 `CopyObject` path is used; legacy keys from the old local layout log a
+  benign `The specified key does not exist` and are skipped (stale→correct).
+- **Auto-heartbeat daemon** keeps the instance node `ACTIVE` (15 s beat < 30 s
+  suspicion window); phantom/unregistered nodes correctly go `DEGRADED → DOWN`
+  — the failure detector working as shown live in `/api/v1/test`.
+
+---
+
 ## Quick "convince the interviewer" numbers (test suite)
-- **171 tests / 23 suites** — `npm test` in `backend/` (jest)
+- **174 tests / 23 suites** — `npm test` in `backend/` (jest)
 - Property test for hash-ring remapping ratio ≈ 1/n
 - Heartbeat suspicion windows: 30s soft / 90s hard; scan every 10s
 - 4× parallel upload parts, resume after failure
