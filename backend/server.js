@@ -34,6 +34,12 @@ async function startServer() {
     const { startHeartbeatMonitor } = require('./utils/backgroundJobs');
     startHeartbeatMonitor();
   }
+
+  // Start self-healing replicator daemon (unless explicitly disabled for tests)
+  if (!process.env.REPLICATOR_DISABLED) {
+    const { startReplicator } = require('./utils/backgroundJobs');
+    startReplicator();
+  }
 }
 
 // Initialize the server

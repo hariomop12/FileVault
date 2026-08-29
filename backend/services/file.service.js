@@ -11,6 +11,8 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const logger = require("../utils/logger");
 const LocalStorageService = require("./localStorage.service");
+const StorageNodeService = require("./storageNode.service");
+const ReplicationService = require("./replication.service");
 
 // Lazy nodemailer transporter
 let _transporter = null;
@@ -477,6 +479,16 @@ const FileService = {
          RETURNING id`,
         [userId, file.originalname, s3Key, file.size, file.mimetype, secretKey]
       );
+
+      // Record replication placement (non-fatal: the background replicator self-heals)
+      try {
+        const placement = await StorageNodeService.placeFile(s3Key, ReplicationService.replicationFactor());
+        if (placement && !placement.error) {
+          await ReplicationService.recordPlacementForFile(result.rows[0].id, s3Key, placement);
+        }
+      } catch (error) {
+        logger.warn(`Replication placement not recorded for ${s3Key}: ${error.message}`);
+      }
 
       return {
         file_id: result.rows[0].id,

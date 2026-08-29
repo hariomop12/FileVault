@@ -590,6 +590,49 @@ CREATE INDEX idx_multipart_upload_id ON public.multipart_uploads USING btree (up
 
 
 --
+-- Name: file_replicas; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.file_replicas (
+    id integer NOT NULL,
+    file_id integer NOT NULL,
+    node_id integer NOT NULL,
+    s3_key text NOT NULL,
+    status text DEFAULT 'ACTIVE'::text,
+    etag text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE SEQUENCE public.file_replicas_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.file_replicas_id_seq OWNED BY public.file_replicas.id;
+
+ALTER TABLE ONLY public.file_replicas ALTER COLUMN id SET DEFAULT nextval('public.file_replicas_id_seq'::regclass);
+
+ALTER TABLE ONLY public.file_replicas
+    ADD CONSTRAINT file_replicas_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.file_replicas
+    ADD CONSTRAINT file_replicas_file_id_node_id_key UNIQUE (file_id, node_id);
+
+ALTER TABLE ONLY public.file_replicas
+    ADD CONSTRAINT file_replicas_file_id_fkey FOREIGN KEY (file_id) REFERENCES public.filevault_files_authed(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.file_replicas
+    ADD CONSTRAINT file_replicas_node_id_fkey FOREIGN KEY (node_id) REFERENCES public.storage_nodes(id) ON DELETE CASCADE;
+
+CREATE INDEX idx_file_replicas_file ON public.file_replicas USING btree (file_id);
+CREATE INDEX idx_file_replicas_node ON public.file_replicas USING btree (node_id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -614,4 +657,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250615000001'),
     ('20250829120000'),
     ('20250829130000'),
-    ('20250829140000');
+    ('20250829140000'),
+    ('20250829150000');

@@ -3,14 +3,19 @@ jest.mock('../../services/storageNode.service', () => ({
   getNodeHeartbeatState: jest.fn(),
   updateNodeStatus: jest.fn(),
 }));
+jest.mock('../../services/replication.service', () => ({
+  reconcileAll: jest.fn(),
+}));
 
 const {
   evaluateNodeHealth,
   scanAndMarkDown,
+  runReplicator,
   SUSPICION_TIMEOUT_MS,
   FAILSAFE_TIMEOUT_MS,
 } = require('../../utils/backgroundJobs');
 const StorageNodeService = require('../../services/storageNode.service');
+const ReplicationService = require('../../services/replication.service');
 
 describe('backgroundJobs (heartbeat / failure detection)', () => {
   beforeEach(() => {
@@ -94,6 +99,26 @@ describe('backgroundJobs (heartbeat / failure detection)', () => {
       await scanAndMarkDown();
 
       expect(StorageNodeService.updateNodeStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('runReplicator', () => {
+    it('invokes the replication pass and logs corrections', async () => {
+      ReplicationService.reconcileAll.mockResolvedValue({
+        files_scanned: 5,
+        correction_count: 2,
+        under_replicated: 1,
+      });
+
+      await runReplicator();
+
+      expect(ReplicationService.reconcileAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('logs a failure without throwing when the pass errors', async () => {
+      ReplicationService.reconcileAll.mockRejectedValue(new Error('boom'));
+
+      await expect(runReplicator()).resolves.toBeUndefined();
     });
   });
 });
