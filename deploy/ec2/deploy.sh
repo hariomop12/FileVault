@@ -25,8 +25,8 @@ log "backend: install"
 ( cd "$APP_DIR/backend" && npm install --legacy-peer-deps --no-audit --no-fund --silent )
 
 log "frontend: install + build"
-( cd "$APP_DIR/frontend" && ( (pnpm install --silent && CI=true pnpm run build) >/dev/null ) ) || \
-( cd "$APP_DIR/frontend" && npm install --legacy-peer-deps --no-audit --no-fund --silent && CI=true npm run build >/dev/null )
+( cd "$APP_DIR/frontend" && ( (pnpm install --silent && NODE_OPTIONS=--max-old-space-size=512 CI=true pnpm run build) >/dev/null ) ) || \
+( cd "$APP_DIR/frontend" && npm install --legacy-peer-deps --no-audit --no-fund --silent && NODE_OPTIONS=--max-old-space-size=512 CI=true npm run build >/dev/null )
 
 log "pm2 reload backend"
 pm2 reload filevault-backend --update-env || pm2 start "$APP_DIR/deploy/ec2/ecosystem.config.js" --env production
@@ -36,7 +36,7 @@ nginx -t -q && systemctl reload nginx 2>/dev/null || true
 
 log "health check"
 for i in $(seq 1 15); do
-  CODE=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/api/v1/test || true)
+  CODE=$(curl -s -L -o /dev/null -w '%{http_code}' -m 8 -H "Host: backend.filevault.hariomop.in" http://127.0.0.1/api/v1/test || true)
   if [ "$CODE" = "200" ]; then log "healthy (HTTP 200)"; exit 0; fi
   sleep 2
 done
