@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import DarkModeToggle from '../components/ui/DarkModeToggle';
 
-const API_BASE = (process.env.REACT_APP_API_URL || 'https://file-vault-backend-g5102.sevalla.app').replace(/\/+$/, '');
+const API_BASE = (
+  process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? 'https://file-vault-backend-g5102.sevalla.app' : '')
+).replace(/\/+$/, '');
 
 const LandingPage: React.FC = () => {
   const [downloadId, setDownloadId] = useState('');
